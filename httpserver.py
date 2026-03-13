@@ -180,4 +180,5 @@ def shutdown():
     os._exit(0)
 
 # TODO - Change Port to an appropriate individual port for yourself
-app.run(host='0.0.0.0', port=10470)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=10470)
