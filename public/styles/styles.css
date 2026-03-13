@@ -1,0 +1,89 @@
+body {
+    background-color: #3B3844;
+}
+
+ul#moviesWatchList li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
+}
+
+ul#moviesList li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
+}
+
+body > *{
+    color: white;
+}
+
+button {
+    background-color: #6078C6;
+    height: 40px;
+    width: 120px;
+}
+
+.signUpButtonsDiv{
+    display: flex;
+    justify-content: center;
+    padding: 5px;
+}
+
+.image-button {
+    background: url('../star-white.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: none;
+    padding: 10px 10px;
+    height: 50px;
+    width: 50px;
+    cursor: pointer;
+    transition: background-image 0.5s;
+}
+  
+.image-button.gold {
+background-image: url('../star-yellow.png'); /* Gold star image */
+}
+
+.top-bar {
+    background-color: #6078C6;
+    height: 60px;
+    width: 100%;
+    position: fixed;   
+    line-height: 60px;
+    top: 0;
+    left: 0;
+    z-index: 1001;
+    font-size: 20px;
+    padding-left: 20px;
+}
+
+.nav-bar {
+    background-color: #3A57B7;
+    height: 40px;
+    width: 100%;
+    position: fixed;   
+    line-height: 40px;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    font-size: 20px;
+    padding-left: 20px;
+    margin-top: 60px;
+}
+
+.nav-bar > a {
+    background-color: #3A57B7;
+    color: white;
+    border: none;
+    text-decoration: none;
+    margin-right: 20px;
+}
+
+input {
+    color: black;
+}
