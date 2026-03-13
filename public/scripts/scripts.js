@@ -269,6 +269,9 @@ async function returnPosterByTitle(title) {
     return false
 }
 
+// url for searched movies (ones that start with the), not single movie:
+// https://www.omdbapi.com/?s=$the&apikey=10707b46
+
 async function fetchMovieByTitle(title) {
     const apiKey = '10707b46'
     const url = `http://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${apiKey}`;
