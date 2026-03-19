@@ -1,0 +1,17 @@
+{
+  "name": "letterboxed",
+  "version": "1.0.0",
+  "description": "Movie tracking application",
+  "main": "httpserver.py",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": ["movies", "tracking"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}
