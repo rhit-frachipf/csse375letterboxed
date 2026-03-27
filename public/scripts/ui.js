@@ -51,19 +51,37 @@
         doc.querySelector("#movie-poster").src = movie.poster;
     }
 
-    function wireStarRating(stars, onRate) {
-        Array.from(stars).forEach((star, index) => {
-            star.addEventListener("mouseenter", () => {
-                for (let currentIndex = 0; currentIndex <= index; currentIndex += 1) {
-                    stars[currentIndex].classList.add("gold");
+    function wireStarRating(stars, onRate, initialRating) {
+        const starArray = Array.from(stars);
+        const safeInitialRating = Number(initialRating);
+        let selectedIndex = Number.isNaN(safeInitialRating) || safeInitialRating < 1 ? -1 : safeInitialRating - 1;
+
+        function renderSelection(highlightIndex) {
+            starArray.forEach((currentStar, currentIndex) => {
+                if (currentIndex <= highlightIndex) {
+                    currentStar.classList.add("gold");
+                } else {
+                    currentStar.classList.remove("gold");
                 }
+            });
+        }
+
+        renderSelection(selectedIndex);
+
+        starArray.forEach((star, index) => {
+            star.addEventListener("mouseenter", () => {
+                renderSelection(index);
             });
 
             star.addEventListener("mouseleave", () => {
-                Array.from(stars).forEach((currentStar) => currentStar.classList.remove("gold"));
+                renderSelection(selectedIndex);
             });
 
-            star.addEventListener("click", () => onRate(index + 1));
+            star.addEventListener("click", () => {
+                selectedIndex = index;
+                renderSelection(selectedIndex);
+                onRate(index + 1);
+            });
         });
     }
 

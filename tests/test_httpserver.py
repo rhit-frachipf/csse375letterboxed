@@ -38,7 +38,12 @@ class HttpServerTests(unittest.TestCase):
             {
                 "username": "alice",
                 "password": "pass123",
-                "watched": {"Inception": "5"},
+                "watched": {
+                    "Inception": {
+                        "rating": "5",
+                        "review": "Mind-bending classic",
+                    }
+                },
                 "whattowatch": ["Dune"],
             }
         ]
@@ -97,13 +102,17 @@ class HttpServerTests(unittest.TestCase):
         self.client.post("/add-to-watchlist", data={"movie": "Interstellar"})
         self.assertNotIn("Interstellar", httpserver.db.get(self.users_list_key)[0]["whattowatch"])
 
-    def test_add_to_watched_updates_movie_rating(self):
+    def test_add_to_watched_updates_movie_rating_and_review(self):
         self.login_as_alice()
 
-        self.client.post("/add-to-watched", data={"movie": "Arrival", "rating": "4"})
+        self.client.post(
+            "/add-to-watched",
+            data={"movie": "Arrival", "rating": "4", "review": "Slow burn done right"},
+        )
 
         watched = httpserver.db.get(self.users_list_key)[0]["watched"]
-        self.assertEqual(watched["Arrival"], "4")
+        self.assertEqual(watched["Arrival"]["rating"], "4")
+        self.assertEqual(watched["Arrival"]["review"], "Slow burn done right")
 
     def test_get_watched_reads_from_session_user(self):
         self.login_as_alice()
@@ -111,7 +120,15 @@ class HttpServerTests(unittest.TestCase):
         response = self.client.get("/get-watched")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"Inception": "5"})
+        self.assertEqual(
+            response.get_json(),
+            {
+                "Inception": {
+                    "rating": "5",
+                    "review": "Mind-bending classic",
+                }
+            },
+        )
 
     def test_logout_clears_the_session(self):
         self.login_as_alice()

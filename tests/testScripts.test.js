@@ -156,7 +156,7 @@ describe("app module", () => {
     expect(fakeDocument.location.href).toBe("mymovies.html");
   });
 
-  test("openMovie renders selected movie and wires actions", async () => {
+  test("openMovie renders selected movie and loads/saves review updates", async () => {
     storage.setSelectedMovie({
       title: "Dune",
       year: "2021",
@@ -164,6 +164,12 @@ describe("app module", () => {
       genre: "Sci-Fi",
       poster: "http://example.com/dune.jpg"
     });
+    const watchedPayload = {
+      Dune: {
+        rating: "2",
+        review: "Original draft review"
+      }
+    };
     const fakeDocument = createDocumentStub(`
       <a class="signout" href="signin.html">Sign Out</a>
       <h1 id="movie-title"></h1>
@@ -177,22 +183,39 @@ describe("app module", () => {
       <button class="image-button"></button>
       <button class="image-button"></button>
       <button class="image-button"></button>
+      <textarea id="written-review"></textarea>
+      <button id="saveReview">Save Review</button>
+      <p id="review-status"></p>
     `);
+    global.fetch = jest.fn((url) => {
+      if (url === "/get-watched") {
+        return Promise.resolve({ json: () => Promise.resolve(watchedPayload) });
+      }
+
+      return Promise.resolve({ json: () => Promise.resolve(true) });
+    });
     const addToWatchlistSpy = jest.spyOn(api, "addToWatchlist").mockResolvedValue(true);
     const addToWatchedSpy = jest.spyOn(api, "addToWatched").mockResolvedValue(true);
 
-    app.openMovie(fakeDocument);
+    await app.openMovie(fakeDocument);
 
     expect(document.querySelector("#movie-title").textContent).toBe("Dune");
+    expect(document.querySelector("#written-review").value).toBe("Original draft review");
+    expect(document.querySelectorAll(".image-button")[0].classList.contains("gold")).toBe(true);
+    expect(document.querySelectorAll(".image-button")[1].classList.contains("gold")).toBe(true);
+    expect(document.querySelectorAll(".image-button")[2].classList.contains("gold")).toBe(false);
 
     document.querySelector("#addToList").click();
+    document.querySelector("#written-review").value = "Great worldbuilding and scope";
     document.querySelectorAll(".image-button")[2].click();
+    document.querySelector("#saveReview").click();
 
     await Promise.resolve();
     await Promise.resolve();
 
     expect(addToWatchlistSpy).toHaveBeenCalledWith("Dune");
-    expect(addToWatchedSpy).toHaveBeenCalledWith("Dune", 3);
+    expect(addToWatchedSpy).toHaveBeenCalledWith("Dune", 3, "Great worldbuilding and scope");
+    expect(document.querySelector("#review-status").textContent).toBe("Review saved.");
     expect(fakeDocument.location.href).toBe("watchlist.html");
   });
 });

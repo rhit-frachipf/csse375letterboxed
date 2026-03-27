@@ -36,8 +36,8 @@
         return postForm("/add-to-watchlist", { movie }, fetchImpl);
     }
 
-    async function addToWatched(movie, rating, fetchImpl) {
-        return postForm("/add-to-watched", { movie, rating }, fetchImpl);
+    async function addToWatched(movie, rating, review, fetchImpl) {
+        return postForm("/add-to-watched", { movie, rating, review: review || "" }, fetchImpl);
     }
 
     async function fetchWatched(fetchImpl) {

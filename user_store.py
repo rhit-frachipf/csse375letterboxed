@@ -88,12 +88,15 @@ class UserRepository:
         self.update_user(user)
         return True
 
-    def set_movie_rating(self, username, movie, rating) -> bool:
+    def set_movie_rating(self, username, movie, rating, review="") -> bool:
         user = self.find_by_username(username)
         if not user:
             return False
 
-        user.watched[movie] = rating
+        user.watched[movie] = {
+            "rating": str(rating),
+            "review": review or "",
+        }
         self.update_user(user)
         return True
 

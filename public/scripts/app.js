@@ -83,14 +83,24 @@
         const doc = documentRef || root.document;
         bindSignOut(doc);
         const watchedMovies = await api.fetchWatched();
-        const entries = Object.entries(watchedMovies).map(([title, rating]) => ({ title, rating }));
+        const entries = Object.entries(watchedMovies).map(([title, watchedValue]) => {
+            const hasReviewObject = watchedValue && typeof watchedValue === "object";
+            return {
+                title,
+                rating: hasReviewObject ? watchedValue.rating : watchedValue,
+                review: hasReviewObject ? watchedValue.review || "" : "",
+            };
+        });
 
         await ui.renderMovieList({
             container: doc.querySelector("#moviesList"),
             entries,
             fetchPoster: api.fetchPosterByTitle,
             getPosterTitle: (entry) => entry.title,
-            getLabel: (entry) => `   ${entry.title}; ${entry.rating} stars`,
+            getLabel: (entry) => {
+                const reviewSuffix = entry.review ? ` - \"${entry.review}\"` : "";
+                return `   ${entry.title}; ${entry.rating} stars${reviewSuffix}`;
+            },
             onSelect: async (entry) => {
                 await selectMovieAndOpen(entry.title, doc);
             },
@@ -127,15 +137,32 @@
         });
     }
 
-    function openMovie(documentRef) {
+    async function openMovie(documentRef) {
         const doc = documentRef || root.document;
         bindSignOut(doc);
         const movie = requireSelectedMovie(doc);
         if (!movie) {
             return;
         }
+        let selectedRating = null;
 
         ui.updateMovieDetails(movie, doc);
+
+        const watchedMovies = await api.fetchWatched();
+        const watchedValue = watchedMovies[movie.title];
+        const hasReviewObject = watchedValue && typeof watchedValue === "object";
+        const initialRating = hasReviewObject ? Number(watchedValue.rating) : Number(watchedValue);
+        const initialReview = hasReviewObject ? watchedValue.review || "" : "";
+
+        if (!Number.isNaN(initialRating) && initialRating > 0) {
+            selectedRating = initialRating;
+        }
+
+        const reviewTextElement = doc.querySelector("#written-review");
+        if (reviewTextElement) {
+            reviewTextElement.value = initialReview;
+        }
+
         doc.querySelector("#addToList").addEventListener("click", async () => {
             const wasSuccessful = await api.addToWatchlist(movie.title);
             if (wasSuccessful) {
@@ -144,7 +171,29 @@
         });
 
         ui.wireStarRating(doc.querySelectorAll(".image-button"), async (rating) => {
-            await api.addToWatched(movie.title, rating);
+            selectedRating = rating;
+        }, selectedRating);
+
+        const saveReviewButton = doc.querySelector("#saveReview");
+        if (!saveReviewButton) {
+            return;
+        }
+
+        saveReviewButton.addEventListener("click", async () => {
+            const reviewStatus = doc.querySelector("#review-status");
+            if (!selectedRating) {
+                if (reviewStatus) {
+                    reviewStatus.textContent = "Select a star rating before saving your review.";
+                }
+                return;
+            }
+
+            const reviewText = reviewTextElement ? reviewTextElement.value.trim() : "";
+            const wasSuccessful = await api.addToWatched(movie.title, selectedRating, reviewText);
+
+            if (reviewStatus) {
+                reviewStatus.textContent = wasSuccessful ? "Review saved." : "Could not save review.";
+            }
         });
     }
 

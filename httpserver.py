@@ -53,11 +53,11 @@ def addToWatchList(movie):
     return user_repository.toggle_watchlist_movie(user.username, movie)
 
 
-def addToWatched(movie, rating):
+def addToWatched(movie, rating, review=""):
     user = current_user()
     if not user:
         return False
-    return user_repository.set_movie_rating(user.username, movie, rating)
+    return user_repository.set_movie_rating(user.username, movie, rating, review)
 
 @app.route("/")
 def home():
@@ -81,7 +81,7 @@ def add_to_watchlist():
 @app.post('/add-to-watched')
 def add_to_watched():
     post_data = flask.request.form
-    return bool_response(addToWatched(post_data.get("movie"), post_data.get("rating")))
+    return bool_response(addToWatched(post_data.get("movie"), post_data.get("rating"), post_data.get("review", "")))
 
 
 @app.post("/API/LOGIN")
