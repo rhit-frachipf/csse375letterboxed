@@ -1,0 +1,97 @@
+(function (root, factory) {
+    if (typeof module === "object" && module.exports) {
+        module.exports = factory(root);
+    } else {
+        root.LetterboxApi = factory(root);
+    }
+})(typeof globalThis !== "undefined" ? globalThis : this, function (root) {
+    const OMDB_API_KEY = "10707b46";
+
+    async function postForm(url, payload, fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams(payload).toString(),
+        });
+
+        return response.json();
+    }
+
+    async function login(username, password, fetchImpl) {
+        return postForm("/API/LOGIN", { username, password }, fetchImpl);
+    }
+
+    async function signup(username, password, fetchImpl) {
+        return postForm("/API/SIGNUP", { username, password }, fetchImpl);
+    }
+
+    async function logout(fetchImpl) {
+        return postForm("/API/LOGOUT", {}, fetchImpl);
+    }
+
+    async function addToWatchlist(movie, fetchImpl) {
+        return postForm("/add-to-watchlist", { movie }, fetchImpl);
+    }
+
+    async function addToWatched(movie, rating, fetchImpl) {
+        return postForm("/add-to-watched", { movie, rating }, fetchImpl);
+    }
+
+    async function fetchWatched(fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient("/get-watched");
+        return response.json();
+    }
+
+    async function fetchWatchlist(fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient("/get-watchlist");
+        return response.json();
+    }
+
+    function normalizeMovie(payload) {
+        return {
+            title: payload.Title,
+            year: payload.Year,
+            plot: payload.Plot,
+            genre: payload.Genre,
+            poster: payload.Poster,
+        };
+    }
+
+    async function fetchMovieByTitle(title, fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient(
+            `http://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${OMDB_API_KEY}`
+        );
+        const data = await response.json();
+
+        if (data.Response !== "True") {
+            return null;
+        }
+
+        return normalizeMovie(data);
+    }
+
+    async function fetchPosterByTitle(title, fetchImpl) {
+        const movie = await fetchMovieByTitle(title, fetchImpl);
+        return movie ? movie.poster : null;
+    }
+
+    return {
+        postForm,
+        login,
+        signup,
+        logout,
+        addToWatchlist,
+        addToWatched,
+        fetchWatched,
+        fetchWatchlist,
+        fetchMovieByTitle,
+        fetchPosterByTitle,
+        normalizeMovie,
+    };
+});

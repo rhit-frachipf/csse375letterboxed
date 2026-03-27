@@ -1,98 +1,63 @@
 import flask
-import json
 import os
 import pickledb
+from user_store import AuthService, UserRepository
+
+
+class PickleDBAdapter:
+    def __init__(self, database):
+        self.database = database
+
+    def get(self, key):
+        return self.database.get(key)
+
+    def set(self, key, value):
+        self.database.set(key, value)
+        self.database.save()
+        return True
+
+
+def load_database(path):
+    if hasattr(pickledb, "load"):
+        return pickledb.load(path, auto_dump=True)
+
+    database = pickledb.PickleDB(path)
+    database.load()
+    return PickleDBAdapter(database)
 
 app = flask.Flask(__name__,             # ie "http_server_starter"
             static_url_path='', 	    # Treat all files as static files.
             static_folder='public')	    # Look in the public folder.
+app.secret_key = os.environ.get("LETTERBOXED_SECRET", "letterboxed-dev-secret")
 
-db = pickledb.load("users.db", auto_dump=True)
-list_name = "usersList"
-users = []
-app.username = ""
-app.password = ""
-app.watched = {}
-app.watchlist = []
-app.loggedin = False
+db = load_database("users.db")
+user_repository = UserRepository(db)
+auth_service = AuthService(user_repository)
 
-if not db.get(list_name):
-    db.lcreate(list_name)
 
-def signup():
-    for x in db.getall():
-        users = db.get(x)
-        usernamelist = []
-        for y in users:
-            usernamelist.append(y.get("username"))
-        if (app.username in usernamelist):
-            print("User already exists")
-            break
-        else:
-            entry = {"username": app.username,
-                     "password": app.password,
-                     "watched": {},
-                     "whattowatch": []}
-            db.ladd(list_name, entry)
-            login()
+def bool_response(value, status=200):
+    return flask.jsonify(bool(value)), status
+
+
+def current_user():
+    username = flask.session.get("username")
+    if not username:
+        return None
+    return user_repository.find_by_username(username)
+
 
 def addToWatchList(movie):
-    # Retrieve the list of users
-    users_list = db.get("usersList")
+    user = current_user()
+    if not user:
+        return False
+    return user_repository.toggle_watchlist_movie(user.username, movie)
 
-    # Find the user and append a new movie to their whattowatch list
-    for user in users_list:
-        if user["username"] == app.username:
-            for movies in user["whattowatch"]:
-                if movies == movie:
-                    user["whattowatch"].remove(movie)
-                    db.set("usersList", users_list)
-                    return
-            user["whattowatch"].append(movie)
-
-    # Save the updated users list back to the database
-    db.set("usersList", users_list)
-    return
 
 def addToWatched(movie, rating):
-    # Retrieve the list of users
-    users_list = db.get("usersList")
-
-    # Find the user and append a new movie to their whattowatch list
-    for user in users_list:
-        if user["username"] == app.username:
-            # for movies in user["watched"]:
-            #     # print(movies)
-            #     # print(movie)
-            #     if movies == movie:
-            #         return
-            user["watched"][movie] = rating
-
-    # Save the updated users list back to the database
-    db.set("usersList", users_list)
-    return
-
-def login():
-    # print(app.username)
-    for x in db.getall():
-        users = db.get(x)
-        usernamelist = []
-        for y in users:
-            usernamelist.append(y.get("username"))
-        if (app.username in usernamelist):
-            for z in users:
-                if (app.username == z.get("username")):
-                    if (app.password == z.get("password")):
-                        # print("Logged in!")
-                        # print(app.username)
-                        app.watched = z.get("watched")
-                        # print(app.watched)
-                        app.watchlist = z.get("whattowatch")
-                        app.loggedin = True
-                    else:
-                        print("Password is incorrect")
-        else:
-            print("User does not exist")
+    user = current_user()
+    if not user:
+        return False
+    return user_repository.set_movie_rating(user.username, movie, rating)
 
 @app.route("/")
 def home():
@@ -100,79 +65,51 @@ def home():
 
 @app.route('/get-watched')
 def get_watched():
-    return flask.jsonify(app.watched)
+    user = current_user()
+    return flask.jsonify(user.watched if user else {})
 
 @app.route('/get-watchlist')
 def get_watchlist():
-    return flask.jsonify(app.watchlist)
+    user = current_user()
+    return flask.jsonify(user.whattowatch if user else [])
 
 @app.post('/add-to-watchlist')
 def add_to_watchlist():
     post_data = flask.request.form
-    addToWatchList(post_data.get("movie"))
-
-    data=json.dumps( app.loggedin )
-    
-    return flask.Response(data,
-                          status=200,
-                          headers={
-                              "Content-Type":"application/json"
-                          }
-                          )
+    return bool_response(addToWatchList(post_data.get("movie")))
 
 @app.post('/add-to-watched')
 def add_to_watched():
     post_data = flask.request.form
-    addToWatched(post_data.get("movie"), post_data.get("rating"))
-
-    data=json.dumps( app.loggedin )
-    
-    return flask.Response(data,
-                          status=200,
-                          headers={
-                              "Content-Type":"application/json"
-                          }
-                          )
+    return bool_response(addToWatched(post_data.get("movie"), post_data.get("rating")))
 
 
 @app.post("/API/LOGIN")
 def handle_login():
     post_data = flask.request.form
-    
-    app.username = post_data.get("username")
-    app.password = post_data.get("password")
-    app.loggedin = post_data.get("loggedin")
+    user = auth_service.login(post_data.get("username"), post_data.get("password"))
+    if not user:
+        flask.session.pop("username", None)
+        return bool_response(False)
 
-    login()
-
-    data=json.dumps( app.loggedin )
-    
-    return flask.Response(data,
-                          status=200,
-                          headers={
-                              "Content-Type":"application/json"
-                          }
-                          )
+    flask.session["username"] = user.username
+    return bool_response(True)
 
 @app.post("/API/SIGNUP")
 def handle_signup():
-    # print("/API/SIGNUP invoked, post_data:")
     post_data = flask.request.form
-    # print("Post data: ", post_data)
-    
-    app.username = post_data.get("username")
-    app.password = post_data.get("password")
+    user = auth_service.signup(post_data.get("username"), post_data.get("password"))
+    if not user:
+        return bool_response(False)
 
-    signup()
+    flask.session["username"] = user.username
+    return bool_response(True)
 
-    data=json.dumps( app.loggedin )
-    
-    return flask.Response(data,
-                          status=200,
-                          headers={
-                              "Content-Type":"application/json"
-                          }
-                          )
+
+@app.post("/API/LOGOUT")
+def handle_logout():
+    flask.session.clear()
+    return bool_response(True)
 
 @app.get("/shutdown")
 def shutdown():
