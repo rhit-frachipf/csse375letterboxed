@@ -220,6 +220,177 @@ describe("app module", () => {
   });
 });
 
+describe("search feature", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    jest.restoreAllMocks();
+  });
+
+  test("searchMovies returns first 5 results from API", async () => {
+    const mockSearchResults = {
+      Response: "True",
+      Search: [
+        { Title: "Inception", Year: "2010", Plot: "Dream heist", Genre: "Sci-Fi", Poster: "http://example.com/inception.jpg" },
+        { Title: "Interstellar", Year: "2014", Plot: "Space exploration", Genre: "Sci-Fi", Poster: "http://example.com/interstellar.jpg" },
+        { Title: "The Prestige", Year: "2006", Plot: "Magic rivalry", Genre: "Drama", Poster: "http://example.com/prestige.jpg" },
+        { Title: "Batman Begins", Year: "2005", Plot: "Origin story", Genre: "Action", Poster: "http://example.com/batman.jpg" },
+        { Title: "The Dark Knight", Year: "2008", Plot: "Joker chaos", Genre: "Action", Poster: "http://example.com/darkknight.jpg" },
+        { Title: "Tenet", Year: "2020", Plot: "Time inversion", Genre: "Sci-Fi", Poster: "http://example.com/tenet.jpg" }
+      ]
+    };
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(mockSearchResults)
+    });
+
+    const results = await api.searchMovies("nolan", fetchMock);
+
+    expect(results).toHaveLength(5);
+    expect(results[0]).toEqual({
+      title: "Inception",
+      year: "2010",
+      plot: "Dream heist",
+      genre: "Sci-Fi",
+      poster: "http://example.com/inception.jpg"
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("s=nolan")
+    );
+  });
+
+  test("searchMovies returns empty array when no results found", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ Response: "False" })
+    });
+
+    const results = await api.searchMovies("nonexistentmovie", fetchMock);
+
+    expect(results).toEqual([]);
+  });
+
+  test("renderSearchResults populates menu with clickable movie titles", async () => {
+    document.body.innerHTML = "<ul id=\"searchMenu\"></ul>";
+    const onSelect = jest.fn();
+    
+    const movies = [
+      { title: "Inception", year: "2010", plot: "Dream heist", genre: "Sci-Fi", poster: "http://example.com/inception.jpg" },
+      { title: "Interstellar", year: "2014", plot: "Space exploration", genre: "Sci-Fi", poster: "http://example.com/interstellar.jpg" }
+    ];
+
+    await ui.renderSearchResults(
+      document.querySelector("#searchMenu"),
+      movies,
+      onSelect,
+      document
+    );
+
+    const items = document.querySelectorAll("#searchMenu li");
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toBe("Inception");
+    expect(items[1].textContent).toBe("Interstellar");
+
+    items[0].click();
+    expect(onSelect).toHaveBeenCalledWith(movies[0]);
+  });
+
+  test("openSearch wires input event on searchbox to call searchMovies", async () => {
+    document.body.innerHTML = `
+      <input id="searchbox" type="text" />
+      <ul id="searchMenu"></ul>
+      <button id="search">Search</button>
+      <a class="signout" href="signin.html">Sign Out</a>
+    `;
+    
+    const fakeDocument = {
+      location: { href: "search.html" },
+      querySelector: document.querySelector.bind(document),
+      querySelectorAll: document.querySelectorAll.bind(document),
+      createElement: document.createElement.bind(document),
+      createTextNode: document.createTextNode.bind(document)
+    };
+
+    const searchMoviesSpy = jest.spyOn(api, "searchMovies").mockResolvedValue([
+      { title: "Test Movie", year: "2020", plot: "Test", genre: "Drama", poster: "http://example.com/test.jpg" }
+    ]);
+
+    app.openSearch(fakeDocument);
+
+    const searchbox = document.querySelector("#searchbox");
+    searchbox.value = "test";
+    searchbox.dispatchEvent(new Event("input", { bubbles: true }));
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(searchMoviesSpy).toHaveBeenCalledWith("test");
+    expect(document.querySelector("#searchMenu li")).not.toBeNull();
+    expect(document.querySelector("#searchMenu li").textContent).toBe("Test Movie");
+  });
+
+  test("openSearch clears menu when searchbox is empty", async () => {
+    document.body.innerHTML = `
+      <input id="searchbox" type="text" />
+      <ul id="searchMenu"><li>Old Result</li></ul>
+      <button id="search">Search</button>
+      <a class="signout" href="signin.html">Sign Out</a>
+    `;
+    
+    const fakeDocument = {
+      location: { href: "search.html" },
+      querySelector: document.querySelector.bind(document),
+      querySelectorAll: document.querySelectorAll.bind(document),
+      createElement: document.createElement.bind(document),
+      createTextNode: document.createTextNode.bind(document)
+    };
+
+    jest.spyOn(api, "searchMovies").mockResolvedValue([]);
+
+    app.openSearch(fakeDocument);
+
+    const searchbox = document.querySelector("#searchbox");
+    searchbox.value = "";
+    searchbox.dispatchEvent(new Event("input", { bubbles: true }));
+
+    await Promise.resolve();
+
+    expect(document.querySelector("#searchMenu").innerHTML).toBe("");
+  });
+
+  test("openSearch navigates to movie page when result is clicked", async () => {
+    document.body.innerHTML = `
+      <input id="searchbox" type="text" />
+      <ul id="searchMenu"></ul>
+      <button id="search">Search</button>
+      <a class="signout" href="signin.html">Sign Out</a>
+    `;
+    
+    const fakeDocument = {
+      location: { href: "search.html" },
+      querySelector: document.querySelector.bind(document),
+      querySelectorAll: document.querySelectorAll.bind(document),
+      createElement: document.createElement.bind(document),
+      createTextNode: document.createTextNode.bind(document)
+    };
+
+    const testMovie = { title: "Test Movie", year: "2020", plot: "Test", genre: "Drama", poster: "http://example.com/test.jpg" };
+    jest.spyOn(api, "searchMovies").mockResolvedValue([testMovie]);
+
+    app.openSearch(fakeDocument);
+
+    const searchbox = document.querySelector("#searchbox");
+    searchbox.value = "test";
+    searchbox.dispatchEvent(new Event("input", { bubbles: true }));
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    document.querySelector("#searchMenu li").click();
+
+    expect(storage.loadAppState().selectedMovie).toEqual(testMovie);
+    expect(fakeDocument.location.href).toBe("movie.html");
+  });
+});
+
 describe("scripts entrypoint", () => {
   test("exposes browser page hooks", () => {
     expect(entry.openSignin).toBeDefined();

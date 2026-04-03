@@ -81,6 +81,20 @@
         return movie ? movie.poster : null;
     }
 
+    async function searchMovies(searchTerm, fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient(
+            `http://www.omdbapi.com/?s=${encodeURIComponent(searchTerm)}&apikey=${OMDB_API_KEY}`
+        );
+        const data = await response.json();
+
+        if (data.Response !== "True" || !data.Search) {
+            return [];
+        }
+
+        return data.Search.slice(0, 5).map(normalizeMovie);
+    }
+
     return {
         postForm,
         login,
@@ -92,6 +106,7 @@
         fetchWatchlist,
         fetchMovieByTitle,
         fetchPosterByTitle,
+        searchMovies,
         normalizeMovie,
     };
 });

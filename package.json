@@ -8,10 +8,14 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
-  "keywords": ["movies", "tracking"],
+  "keywords": [
+    "movies",
+    "tracking"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "jest": "^29.0.0"
+    "jest": "^29.0.0",
+    "jest-environment-jsdom": "^30.3.0"
   }
 }

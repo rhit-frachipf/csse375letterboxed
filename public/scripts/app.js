@@ -130,7 +130,35 @@
     function openSearch(documentRef) {
         const doc = documentRef || root.document;
         bindSignOut(doc);
+        
+        const searchbox = doc.querySelector("#searchbox");
+        const searchMenu = doc.querySelector("#searchMenu");
         const searchButton = doc.querySelector("#search");
+
+        // Add event listener for live search as user types
+        if (searchbox && searchMenu) {
+            searchbox.addEventListener("input", async () => {
+                const searchTerm = searchbox.value.trim();
+                
+                if (searchTerm.length === 0) {
+                    searchMenu.innerHTML = "";
+                    return;
+                }
+
+                const results = await api.searchMovies(searchTerm);
+                await ui.renderSearchResults(
+                    searchMenu,
+                    results,
+                    async (movie) => {
+                        storage.setSelectedMovie(movie);
+                        navigate("movie.html", doc);
+                    },
+                    doc
+                );
+            });
+        }
+
+        // Keep existing search button functionality
         searchButton.addEventListener("click", async () => {
             const searchedMovie = doc.querySelector("#searchbox").value;
             await selectMovieAndOpen(searchedMovie, doc);

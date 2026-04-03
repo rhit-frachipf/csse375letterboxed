@@ -32,6 +32,22 @@ button {
     padding: 5px;
 }
 
+.searchResults {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 5px;
+    justify-content: center;
+    align-items: center;  
+}
+
+#searchbox {
+    width: 100%;
+    max-width: 300px;
+    padding: 10px;
+    font-size: 16px;
+}
+
 .image-button {
     background: url('../star-white.png');
     background-size: cover;

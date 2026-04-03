@@ -85,9 +85,25 @@
         });
     }
 
+    async function renderSearchResults(container, movies, onSelect, documentRef) {
+        const doc = documentRef || root.document;
+        container.innerHTML = "";
+
+        for (const movie of movies) {
+            const listItem = doc.createElement("li");
+            listItem.textContent = movie.title;
+            listItem.style.cursor = "pointer";
+            listItem.style.padding = "8px";
+            listItem.style.borderBottom = "1px solid #ddd";
+            listItem.addEventListener("click", () => onSelect(movie));
+            container.appendChild(listItem);
+        }
+    }
+
     return {
         renderMovieList,
         updateMovieDetails,
         wireStarRating,
+        renderSearchResults,
     };
 });
