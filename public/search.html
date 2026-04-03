@@ -17,7 +17,7 @@
   <div class="top-bar">
     <img src="logo.png" width = "300" height = "55">
   </div>
-  <div style="margin-top: 115px;"></div>
+  <div class="page-spacer"></div>
 
   <nav class="nav-bar">
     <a class="mymovies" href="mymovies.html">My Movies</a>
@@ -26,14 +26,17 @@
     <a class="signout" href="signin.html">Sign Out</a>
   </nav>
 
-  <div class = "searchResults">
-    <input id = "searchbox" type = "text"></input>
-    <div id = "searchMenu"></div>
-  </div> 
+  <main class="page-shell">
+    <section class="panel searchResults">
+      <h2>Find Your Next Movie</h2>
+      <input id = "searchbox" type = "text" placeholder="Start typing a movie title..."></input>
+      <div id = "searchMenu"></div>
 
-  <div class = "signUpButtonsDiv">
-    <button id = "search">Search</button>
-  </div>
+      <div class = "signUpButtonsDiv">
+        <button id = "search">Search</button>
+      </div>
+    </section>
+  </main>
 
 </body>
 

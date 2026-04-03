@@ -33,6 +33,8 @@
             const title = getPosterTitle(entry);
             const posterUrl = await fetchPoster(title);
 
+            listItem.className = "movie-list-item";
+            image.className = "movie-list-poster";
             applyPosterImage(image, posterUrl);
             image.alt = `${title} image`;
             listItem.appendChild(image);

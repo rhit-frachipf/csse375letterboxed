@@ -17,7 +17,7 @@
   <div class="top-bar">
     <img src="logo.png" width = "300" height = "55">
   </div>
-  <div style="margin-top: 115px;"></div>
+  <div class="page-spacer"></div>
 
   <nav class="nav-bar">
     <a class="mymovies" href="mymovies.html">My Movies</a>
@@ -26,35 +26,37 @@
     <a class="signout" href="signin.html">Sign Out</a>
   </nav>
 
-  <div>
-    <h1 id = "movie-title"></h1>
-  </div>
+  <main class="page-shell">
+    <section class="panel">
+      <h1 id = "movie-title"></h1>
 
-  <div class="movie-details-layout">
-    <img id = "movie-poster" src = "" width = "150" height = "250" alt = "Movie Poster">
-    <div class="movie-text-details">
-      <p id = "movie-genre"></p>
-      <p id = "movie-year"></p>
-      <p id = "movie-plot"></p>
-    </div>
-  </div>
+      <div class="movie-details-layout">
+        <img id = "movie-poster" src = "" width = "150" height = "250" alt = "Movie Poster">
+        <div class="movie-text-details">
+          <p id = "movie-genre"></p>
+          <p id = "movie-year"></p>
+          <p id = "movie-plot"></p>
+        </div>
+      </div>
 
-  <button id = "addToList">Toggle on Watchlist</button>
+      <button id = "addToList">Toggle on Watchlist</button>
 
-  <div class = "star-container">
-    <button class = "image-button" id = "1-star"></button>
-    <button class = "image-button" id = "2-star"></button>
-    <button class = "image-button" id = "3-star"></button>
-    <button class = "image-button" id = "4-star"></button>
-    <button class = "image-button" id = "5-star"></button>
-  </div>
+      <div class = "star-container">
+        <button class = "image-button" id = "1-star"></button>
+        <button class = "image-button" id = "2-star"></button>
+        <button class = "image-button" id = "3-star"></button>
+        <button class = "image-button" id = "4-star"></button>
+        <button class = "image-button" id = "5-star"></button>
+      </div>
 
-  <div>
-    <label for="written-review">Written review</label>
-    <textarea id="written-review" rows="4" cols="50" placeholder="Share your thoughts about this movie"></textarea>
-    <button id="saveReview">Save Review</button>
-    <p id="review-status"></p>
-  </div>
+      <div>
+        <label for="written-review">Written review</label>
+        <textarea id="written-review" rows="4" cols="50" placeholder="Share your thoughts about this movie"></textarea>
+        <button id="saveReview">Save Review</button>
+        <p id="review-status"></p>
+      </div>
+    </section>
+  </main>
 
 </body>
 
