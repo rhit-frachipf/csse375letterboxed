@@ -150,8 +150,7 @@
                     searchMenu,
                     results,
                     async (movie) => {
-                        storage.setSelectedMovie(movie);
-                        navigate("movie.html", doc);
+                        await selectMovieAndOpen(movie.title, doc);
                     },
                     doc
                 );

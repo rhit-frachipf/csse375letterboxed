@@ -90,13 +90,22 @@
         container.innerHTML = "";
 
         for (const movie of movies) {
-            const listItem = doc.createElement("li");
-            listItem.textContent = movie.title;
-            listItem.style.cursor = "pointer";
-            listItem.style.padding = "8px";
-            listItem.style.borderBottom = "1px solid #ddd";
-            listItem.addEventListener("click", () => onSelect(movie));
-            container.appendChild(listItem);
+            const card = doc.createElement("div");
+            const poster = doc.createElement("img");
+            const title = doc.createElement("div");
+
+            card.className = "search-result-card";
+            poster.className = "search-result-poster";
+            title.className = "search-result-title";
+
+            poster.src = movie.poster && movie.poster !== "N/A" ? movie.poster : "noimage.png";
+            poster.alt = `${movie.title} poster`;
+            title.textContent = movie.title;
+
+            card.appendChild(poster);
+            card.appendChild(title);
+            card.addEventListener("click", () => onSelect(movie));
+            container.appendChild(card);
         }
     }
 

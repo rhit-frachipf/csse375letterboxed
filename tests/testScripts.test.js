@@ -268,8 +268,8 @@ describe("search feature", () => {
     expect(results).toEqual([]);
   });
 
-  test("renderSearchResults populates menu with clickable movie titles", async () => {
-    document.body.innerHTML = "<ul id=\"searchMenu\"></ul>";
+  test("renderSearchResults populates menu with clickable movie cards", async () => {
+    document.body.innerHTML = "<div id=\"searchMenu\"></div>";
     const onSelect = jest.fn();
     
     const movies = [
@@ -284,10 +284,12 @@ describe("search feature", () => {
       document
     );
 
-    const items = document.querySelectorAll("#searchMenu li");
+    const items = document.querySelectorAll("#searchMenu .search-result-card");
     expect(items).toHaveLength(2);
-    expect(items[0].textContent).toBe("Inception");
-    expect(items[1].textContent).toBe("Interstellar");
+    expect(items[0].querySelector(".search-result-title").textContent).toBe("Inception");
+    expect(items[1].querySelector(".search-result-title").textContent).toBe("Interstellar");
+    expect(items[0].querySelector(".search-result-poster").getAttribute("src"))
+      .toBe("http://example.com/inception.jpg");
 
     items[0].click();
     expect(onSelect).toHaveBeenCalledWith(movies[0]);
@@ -296,7 +298,7 @@ describe("search feature", () => {
   test("openSearch wires input event on searchbox to call searchMovies", async () => {
     document.body.innerHTML = `
       <input id="searchbox" type="text" />
-      <ul id="searchMenu"></ul>
+      <div id="searchMenu"></div>
       <button id="search">Search</button>
       <a class="signout" href="signin.html">Sign Out</a>
     `;
@@ -323,14 +325,14 @@ describe("search feature", () => {
     await Promise.resolve();
 
     expect(searchMoviesSpy).toHaveBeenCalledWith("test");
-    expect(document.querySelector("#searchMenu li")).not.toBeNull();
-    expect(document.querySelector("#searchMenu li").textContent).toBe("Test Movie");
+    expect(document.querySelector("#searchMenu .search-result-card")).not.toBeNull();
+    expect(document.querySelector("#searchMenu .search-result-title").textContent).toBe("Test Movie");
   });
 
   test("openSearch clears menu when searchbox is empty", async () => {
     document.body.innerHTML = `
       <input id="searchbox" type="text" />
-      <ul id="searchMenu"><li>Old Result</li></ul>
+      <div id="searchMenu"><div>Old Result</div></div>
       <button id="search">Search</button>
       <a class="signout" href="signin.html">Sign Out</a>
     `;
@@ -359,7 +361,7 @@ describe("search feature", () => {
   test("openSearch navigates to movie page when result is clicked", async () => {
     document.body.innerHTML = `
       <input id="searchbox" type="text" />
-      <ul id="searchMenu"></ul>
+      <div id="searchMenu"></div>
       <button id="search">Search</button>
       <a class="signout" href="signin.html">Sign Out</a>
     `;
@@ -372,8 +374,16 @@ describe("search feature", () => {
       createTextNode: document.createTextNode.bind(document)
     };
 
-    const testMovie = { title: "Test Movie", year: "2020", plot: "Test", genre: "Drama", poster: "http://example.com/test.jpg" };
-    jest.spyOn(api, "searchMovies").mockResolvedValue([testMovie]);
+    const suggestionMovie = { title: "Test Movie", year: "2020", plot: "", genre: "Drama", poster: "http://example.com/test.jpg" };
+    const fullMovie = {
+      title: "Test Movie",
+      year: "2020",
+      plot: "Full plot loaded from title lookup",
+      genre: "Drama",
+      poster: "http://example.com/test.jpg"
+    };
+    jest.spyOn(api, "searchMovies").mockResolvedValue([suggestionMovie]);
+    jest.spyOn(api, "fetchMovieByTitle").mockResolvedValue(fullMovie);
 
     app.openSearch(fakeDocument);
 
@@ -384,9 +394,9 @@ describe("search feature", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    document.querySelector("#searchMenu li").click();
+    document.querySelector("#searchMenu .search-result-card").click();
 
-    expect(storage.loadAppState().selectedMovie).toEqual(testMovie);
+    expect(storage.loadAppState().selectedMovie).toEqual(fullMovie);
     expect(fakeDocument.location.href).toBe("movie.html");
   });
 });
