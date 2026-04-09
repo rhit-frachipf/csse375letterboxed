@@ -140,6 +140,99 @@ class HttpServerTests(unittest.TestCase):
         with self.client.session_transaction() as session_state:
             self.assertNotIn("username", session_state)
 
+    # --- Characterization tests in anticipation of:
+    #     1. Viewing other users' ratings for a movie on the movie page
+    #     2. Viewing other users' watchlists and rated movies
+    # These tests pin down current UserRepository behavior so refactors
+    # (e.g., new endpoints, cross-user queries) don't silently break it.
+
+    def test_find_by_username_returns_correct_user(self):
+        # Pins that find_by_username returns the right user object by name,
+        # which any cross-user lookup endpoint will rely on.
+        user = httpserver.user_repository.find_by_username("alice")
+
+        self.assertIsNotNone(user)
+        self.assertEqual(user.username, "alice")
+
+    def test_find_by_username_returns_none_for_unknown_user(self):
+        # Pins the boundary: looking up a non-existent user returns None,
+        # not an exception -- important before adding "view user" endpoints.
+        user = httpserver.user_repository.find_by_username("nobody")
+
+        self.assertIsNone(user)
+
+    def test_load_users_returns_all_seeded_users(self):
+        # Pins that _load_users reflects every user in the store.
+        # Any "list all users" or "browse users" feature will depend on this.
+        users = httpserver.user_repository._load_users()
+
+        usernames = [u.username for u in users]
+        self.assertIn("alice", usernames)
+
+    def test_user_watched_dict_shape_is_rating_and_review(self):
+        # Pins the exact shape of a watched entry so that a new endpoint
+        # exposing watched data to other users returns a consistent structure.
+        user = httpserver.user_repository.find_by_username("alice")
+
+        inception = user.watched.get("Inception")
+        self.assertIsNotNone(inception)
+        self.assertIn("rating", inception)
+        self.assertIn("review", inception)
+        self.assertEqual(inception["rating"], "5")
+        self.assertEqual(inception["review"], "Mind-bending classic")
+
+    def test_user_whattowatch_is_a_list_of_strings(self):
+        # Pins that the watchlist is a plain list of title strings,
+        # so an endpoint exposing another user's watchlist returns
+        # the expected type without deserialisation surprises.
+        user = httpserver.user_repository.find_by_username("alice")
+
+        self.assertIsInstance(user.whattowatch, list)
+        self.assertIn("Dune", user.whattowatch)
+
+    def test_get_watched_returns_empty_dict_when_not_logged_in(self):
+        # Pins the unauthenticated case: any new cross-user endpoint should
+        # NOT accidentally expose data when there is no session.
+        response = self.client.get("/get-watched")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {})
+
+    def test_get_watchlist_returns_current_users_watchlist(self):
+        # Pins the existing /get-watchlist response shape so we can safely
+        # add a parallel "get another user's watchlist" endpoint later.
+        self.login_as_alice()
+
+        response = self.client.get("/get-watchlist")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Dune", response.get_json())
+
+    def test_get_watchlist_returns_empty_list_when_not_logged_in(self):
+        # Symmetric boundary test to the watched case above.
+        response = self.client.get("/get-watchlist")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [])
+
+    def test_second_user_watched_is_independent_from_first(self):
+        # Pins that two users' watched dicts are fully isolated from each other.
+        # Adding "see other users' ratings" must not merge or cross-contaminate
+        # per-user watched data.
+        self.fake_db.get(self.users_list_key).append({
+            "username": "bob",
+            "password": "pw",
+            "watched": {"Dune": {"rating": "3", "review": "Visually stunning"}},
+            "whattowatch": [],
+        })
+
+        alice = httpserver.user_repository.find_by_username("alice")
+        bob = httpserver.user_repository.find_by_username("bob")
+
+        self.assertNotIn("Dune", alice.watched)
+        self.assertNotIn("Inception", bob.watched)
+        self.assertEqual(bob.watched["Dune"]["rating"], "3")
+
 
 if __name__ == "__main__":
     unittest.main()

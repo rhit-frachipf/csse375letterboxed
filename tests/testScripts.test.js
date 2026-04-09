@@ -218,6 +218,54 @@ describe("app module", () => {
     expect(document.querySelector("#review-status").textContent).toBe("Review saved.");
     expect(fakeDocument.location.href).toBe("watchlist.html");
   });
+
+  // Additional test to cover the case where user tries to save a review without selecting a star rating
+  test("openMovie save review without star selection shows warning and does not submit", async () => {
+    storage.setSelectedMovie({
+      title: "Dune",
+      year: "2021",
+      plot: "Paul Atreides leads a desert uprising",
+      genre: "Sci-Fi",
+      poster: "http://example.com/dune.jpg"
+    });
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <h1 id="movie-title"></h1>
+      <p id="movie-genre"></p>
+      <p id="movie-plot"></p>
+      <p id="movie-year"></p>
+      <img id="movie-poster" />
+      <button id="addToList">Add</button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <textarea id="written-review"></textarea>
+      <button id="saveReview">Save Review</button>
+      <p id="review-status"></p>
+    `);
+
+    global.fetch = jest.fn((url) => {
+      if (url === "/get-watched") {
+        return Promise.resolve({ json: () => Promise.resolve({}) });
+      }
+
+      return Promise.resolve({ json: () => Promise.resolve(true) });
+    });
+    const addToWatchedSpy = jest.spyOn(api, "addToWatched").mockResolvedValue(true);
+
+    await app.openMovie(fakeDocument);
+
+    document.querySelector("#written-review").value = "Should not save yet";
+    document.querySelector("#saveReview").click();
+
+    await Promise.resolve();
+
+    expect(addToWatchedSpy).not.toHaveBeenCalled();
+    expect(document.querySelector("#review-status").textContent)
+      .toBe("Select a star rating before saving your review.");
+  });
 });
 
 describe("search feature", () => {
