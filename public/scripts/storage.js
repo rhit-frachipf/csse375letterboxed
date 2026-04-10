@@ -11,6 +11,7 @@
         return {
             loggedIn: false,
             selectedMovie: null,
+            viewedUserProfile: null,
         };
     }
 
@@ -24,6 +25,7 @@
             return {
                 loggedIn: Boolean(parsed.loggedIn),
                 selectedMovie: parsed.selectedMovie || null,
+                viewedUserProfile: parsed.viewedUserProfile || null,
             };
         } catch (error) {
             return createDefaultState();
@@ -48,6 +50,7 @@
         const nextState = {
             loggedIn: Boolean(state.loggedIn),
             selectedMovie: state.selectedMovie || null,
+            viewedUserProfile: state.viewedUserProfile || null,
         };
         storageProvider.setItem(STORAGE_KEY, JSON.stringify(nextState));
         return nextState;
@@ -69,6 +72,17 @@
         return saveAppState(createDefaultState(), storage);
     }
 
+    function setViewedUserProfile(username, storageProvider) {
+        const state = loadAppState(storageProvider);
+        state.viewedUserProfile = username || null;
+        return saveAppState(state, storageProvider);
+    }
+
+    function getViewedUserProfile(storageProvider) {
+        const state = loadAppState(storageProvider);
+        return state.viewedUserProfile;
+    }
+
     return {
         STORAGE_KEY,
         createDefaultState,
@@ -77,5 +91,7 @@
         setLoggedIn,
         setSelectedMovie,
         clearAppState,
+        setViewedUserProfile,
+        getViewedUserProfile,
     };
 });

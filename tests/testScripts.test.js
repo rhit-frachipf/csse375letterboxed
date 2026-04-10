@@ -121,6 +121,53 @@ describe("app module", () => {
     };
   }
 
+  // Extended mock stub for new cross-user features
+  function createMoviePageStub(options = {}) {
+    const {
+      includeOtherUsersSection = false,
+      includeUserProfileSection = false
+    } = options;
+
+    let markup = `
+      <a class="signout" href="signin.html">Sign Out</a>
+      <h1 id="movie-title"></h1>
+      <p id="movie-genre"></p>
+      <p id="movie-plot"></p>
+      <p id="movie-year"></p>
+      <img id="movie-poster" />
+      <button id="addToList">Add</button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <textarea id="written-review"></textarea>
+      <button id="saveReview">Save Review</button>
+      <p id="review-status"></p>
+    `;
+
+    if (includeOtherUsersSection) {
+      markup += `
+      <section id="other-users-ratings">
+        <h3>Other Users' Ratings</h3>
+        <ul id="ratings-list"></ul>
+      </section>
+      `;
+    }
+
+    if (includeUserProfileSection) {
+      markup += `
+      <section id="viewed-user-profile">
+        <h3 id="viewed-username"></h3>
+        <ul id="viewed-user-watchlist"></ul>
+        <ul id="viewed-user-watched"></ul>
+      </section>
+      `;
+    }
+
+    return createDocumentStub(markup);
+  }
+
   test("handleAuthAction stores login state and redirects on success", async () => {
     const fakeDocument = { location: { href: "signin.html" } };
 
@@ -265,6 +312,175 @@ describe("app module", () => {
     expect(addToWatchedSpy).not.toHaveBeenCalled();
     expect(document.querySelector("#review-status").textContent)
       .toBe("Select a star rating before saving your review.");
+  });
+
+  // ========== BACKWARD COMPATIBILITY TESTS ==========
+  // Verify that extended mock with new features disabled behaves identically to old mock
+
+  test("BACKWARD COMPAT: extended mock with features disabled produces identical openMovie behavior", async () => {
+    storage.setSelectedMovie({
+      title: "Dune",
+      year: "2021",
+      plot: "Paul Atreides leads a desert uprising",
+      genre: "Sci-Fi",
+      poster: "http://example.com/dune.jpg"
+    });
+
+    // Use extended stub with new features disabled (default)
+    const fakeDocument = createMoviePageStub({
+      includeOtherUsersSection: false,
+      includeUserProfileSection: false
+    });
+
+    const watchedPayload = {
+      Dune: {
+        rating: "2",
+        review: "Original draft review"
+      }
+    };
+
+    global.fetch = jest.fn((url) => {
+      if (url === "/get-watched") {
+        return Promise.resolve({ json: () => Promise.resolve(watchedPayload) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve(true) });
+    });
+
+    const addToWatchedSpy = jest.spyOn(api, "addToWatched").mockResolvedValue(true);
+
+    await app.openMovie(fakeDocument);
+
+    // All existing assertions must pass
+    expect(document.querySelector("#movie-title").textContent).toBe("Dune");
+    expect(document.querySelector("#written-review").value).toBe("Original draft review");
+
+    // Verify new sections do NOT exist
+    expect(document.querySelector("#other-users-ratings")).toBeNull();
+    expect(document.querySelector("#viewed-user-profile")).toBeNull();
+
+    // Verify old behavior still works
+    document.querySelector("#written-review").value = "Still works";
+    document.querySelectorAll(".image-button")[2].click();
+    document.querySelector("#saveReview").click();
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(addToWatchedSpy).toHaveBeenCalledWith("Dune", 3, "Still works");
+  });
+
+  test("BACKWARD COMPAT: extended fetch mock handles old endpoints unchanged", async () => {
+    // Mock the extended fetch that handles both old and new endpoints
+    global.fetch = jest.fn((url) => {
+      // New endpoints
+      if (url.includes("/get-movie-ratings")) {
+        return Promise.resolve({
+          json: () => Promise.resolve([
+            { user: "bob", rating: "4", review: "Great" },
+            { user: "charlie", rating: "3", review: "OK" }
+          ])
+        });
+      }
+      if (url.includes("/get-user-watchlist")) {
+        return Promise.resolve({
+          json: () => Promise.resolve(["Inception", "Tenet"])
+        });
+      }
+      if (url.includes("/get-all-users")) {
+        return Promise.resolve({
+          json: () => Promise.resolve(["alice", "bob", "charlie"])
+        });
+      }
+      // Old endpoints (must still work)
+      if (url === "/get-watched") {
+        return Promise.resolve({
+          json: () => Promise.resolve({
+            "Inception": { rating: "5", review: "Mind-bending" }
+          })
+        });
+      }
+      if (url === "/get-watchlist") {
+        return Promise.resolve({
+          json: () => Promise.resolve(["Dune", "Tenet"])
+        });
+      }
+      return Promise.resolve({ json: () => Promise.resolve(true) });
+    });
+
+    // Old endpoint still returns correct data
+    const watchedResponse = await fetch("/get-watched");
+    const watched = await watchedResponse.json();
+    expect(watched["Inception"].rating).toBe("5");
+    expect(watched["Inception"].review).toBe("Mind-bending");
+
+    const watchlistResponse = await fetch("/get-watchlist");
+    const watchlist = await watchlistResponse.json();
+    expect(watchlist).toContain("Dune");
+    expect(watchlist).toContain("Tenet");
+  });
+
+  test("extended mock: new endpoints work correctly without breaking old behavior", async () => {
+    global.fetch = jest.fn((url) => {
+      if (url.includes("/get-movie-ratings?title=Dune")) {
+        return Promise.resolve({
+          json: () => Promise.resolve([
+            { user: "bob", rating: "4", review: "Stunning" },
+            { user: "charlie", rating: "3", review: "Long" }
+          ])
+        });
+      }
+      if (url.includes("/get-user-watchlist?user=bob")) {
+        return Promise.resolve({
+          json: () => Promise.resolve(["Inception", "Tenet"])
+        });
+      }
+      if (url.includes("/get-all-users")) {
+        return Promise.resolve({
+          json: () => Promise.resolve(["alice", "bob", "charlie"])
+        });
+      }
+      // Old endpoints still work
+      if (url === "/get-watched") {
+        return Promise.resolve({
+          json: () => Promise.resolve({ "Dune": { rating: "5", review: "Epic" } })
+        });
+      }
+      return Promise.resolve({ json: () => Promise.resolve(true) });
+    });
+
+    // Call new endpoints
+    const ratingsResponse = await fetch("/get-movie-ratings?title=Dune");
+    const ratings = await ratingsResponse.json();
+    expect(ratings).toHaveLength(2);
+    expect(ratings[0].user).toBe("bob");
+    expect(ratings[0].rating).toBe("4");
+
+    const watchlistResponse = await fetch("/get-user-watchlist?user=bob");
+    const watchlist = await watchlistResponse.json();
+    expect(watchlist).toContain("Inception");
+
+    const usersResponse = await fetch("/get-all-users");
+    const users = await usersResponse.json();
+    expect(users).toEqual(["alice", "bob", "charlie"]);
+
+    // Old endpoints still work
+    const watchedResponse = await fetch("/get-watched");
+    const watched = await watchedResponse.json();
+    expect(watched["Dune"].rating).toBe("5");
+  });
+
+  test("storage: viewedUserProfile defaults to null and can be set", () => {
+    const state = storage.createDefaultState();
+    expect(state.viewedUserProfile).toBeNull();
+
+    storage.setViewedUserProfile("bob");
+    expect(storage.getViewedUserProfile()).toBe("bob");
+
+    storage.setViewedUserProfile("charlie");
+    expect(storage.getViewedUserProfile()).toBe("charlie");
+
+    storage.clearAppState();
+    expect(storage.getViewedUserProfile()).toBeNull();
   });
 });
 
