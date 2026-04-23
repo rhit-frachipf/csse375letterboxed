@@ -64,6 +64,7 @@ describe("api module", () => {
         Year: "2010",
         Plot: "Dreams within dreams",
         Genre: "Sci-Fi",
+        Director: "Christopher Nolan",
         Poster: "http://example.com/inception.jpg"
       })
     });
@@ -75,6 +76,7 @@ describe("api module", () => {
       year: "2010",
       plot: "Dreams within dreams",
       genre: "Sci-Fi",
+      director: "Christopher Nolan",
       poster: "http://example.com/inception.jpg"
     });
   });
@@ -201,6 +203,211 @@ describe("app module", () => {
     expect(loginSpy).toHaveBeenCalledWith("alice", "pw");
     expect(storage.loadAppState().loggedIn).toBe(true);
     expect(fakeDocument.location.href).toBe("mymovies.html");
+  });
+
+  test("openSearch shows personalized recommendations before typing", async () => {
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <input id="searchbox" value="" />
+      <p id="searchStatus"></p>
+      <div id="searchMenu"></div>
+      <button id="search">Search</button>
+    `);
+
+    jest.spyOn(api, "fetchWatchlist").mockResolvedValue(["The Dark Knight"]);
+    jest.spyOn(api, "fetchWatched").mockResolvedValue({});
+    jest.spyOn(api, "fetchMovieByTitle").mockImplementation(async (title) => {
+      const movieMap = {
+        "Inception": {
+          title: "Inception",
+          genre: "Action, Sci-Fi",
+          director: "Christopher Nolan",
+          poster: "http://example.com/inception.jpg"
+        },
+        "Interstellar": {
+          title: "Interstellar",
+          genre: "Adventure, Sci-Fi",
+          director: "Christopher Nolan",
+          poster: "http://example.com/interstellar.jpg"
+        },
+        "The Dark Knight": {
+          title: "The Dark Knight",
+          genre: "Action, Crime, Drama",
+          director: "Christopher Nolan",
+          poster: "http://example.com/darkknight.jpg"
+        },
+        "The Shawshank Redemption": {
+          title: "The Shawshank Redemption",
+          genre: "Drama",
+          director: "Frank Darabont",
+          poster: "http://example.com/shawshank.jpg"
+        },
+        "Pulp Fiction": {
+          title: "Pulp Fiction",
+          genre: "Crime, Drama",
+          director: "Quentin Tarantino",
+          poster: "http://example.com/pulpfiction.jpg"
+        },
+        "The Godfather": {
+          title: "The Godfather",
+          genre: "Crime, Drama",
+          director: "Francis Ford Coppola",
+          poster: "http://example.com/godfather.jpg"
+        },
+        "Parasite": {
+          title: "Parasite",
+          genre: "Drama, Thriller",
+          director: "Bong Joon-ho",
+          poster: "http://example.com/parasite.jpg"
+        },
+        "Mad Max: Fury Road": {
+          title: "Mad Max: Fury Road",
+          genre: "Action, Adventure",
+          director: "George Miller",
+          poster: "http://example.com/madmax.jpg"
+        },
+        "The Matrix": {
+          title: "The Matrix",
+          genre: "Action, Sci-Fi",
+          director: "Lana Wachowski",
+          poster: "http://example.com/matrix.jpg"
+        },
+        "Whiplash": {
+          title: "Whiplash",
+          genre: "Drama, Music",
+          director: "Damien Chazelle",
+          poster: "http://example.com/whiplash.jpg"
+        }
+      };
+
+      return movieMap[title] || null;
+    });
+
+    await app.openSearch(fakeDocument);
+
+    const titles = Array.from(document.querySelectorAll(".search-result-title")).map((element) => element.textContent);
+    expect(titles.length).toBe(5);
+    expect(titles[0]).toBe("Inception");
+    expect(document.querySelector("#searchStatus").textContent)
+      .toContain("Recommended for you");
+  });
+
+  test("openSearch falls back to popular recommendations when no user history exists", async () => {
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <input id="searchbox" value="" />
+      <p id="searchStatus"></p>
+      <div id="searchMenu"></div>
+      <button id="search">Search</button>
+    `);
+
+    jest.spyOn(api, "fetchWatchlist").mockResolvedValue([]);
+    jest.spyOn(api, "fetchWatched").mockResolvedValue({});
+    jest.spyOn(api, "fetchMovieByTitle").mockImplementation(async (title) => ({
+      title,
+      genre: "Drama",
+      director: "Fallback Director",
+      poster: `http://example.com/${title}.jpg`
+    }));
+
+    await app.openSearch(fakeDocument);
+
+    const titles = Array.from(document.querySelectorAll(".search-result-title")).map((element) => element.textContent);
+    expect(titles.length).toBe(5);
+    expect(titles[0]).toBe("Inception");
+    expect(document.querySelector("#searchStatus").textContent)
+      .toContain("Popular movies");
+  });
+
+  test("openFindUser stores selected username and navigates to user profile", async () => {
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <input id="findUserInput" value="bob" />
+      <ul id="findUserSuggestions"></ul>
+      <button id="findUserButton">View Profile</button>
+      <p id="findUserStatus"></p>
+    `);
+
+    jest.spyOn(api, "fetchUserProfile").mockResolvedValue({
+      found: true,
+      profile: {
+        username: "bob",
+        watchlist: ["Dune"],
+        watched: {}
+      }
+    });
+
+    await app.openFindUser(fakeDocument);
+    document.querySelector("#findUserButton").click();
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(storage.getViewedUserProfile()).toBe("bob");
+    expect(fakeDocument.location.href).toBe("userprofile.html");
+  });
+
+  test("openFindUser shows autocomplete suggestions and fills input on click", async () => {
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <input id="findUserInput" value="" />
+      <ul id="findUserSuggestions"></ul>
+      <button id="findUserButton">View Profile</button>
+      <p id="findUserStatus"></p>
+    `);
+
+    jest.spyOn(api, "fetchUserSuggestions").mockResolvedValue(["bob", "bobby"]);
+    jest.spyOn(api, "fetchUserProfile").mockResolvedValue({ found: false });
+
+    await app.openFindUser(fakeDocument);
+
+    const input = document.querySelector("#findUserInput");
+    input.value = "bo";
+    input.dispatchEvent(new Event("input"));
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const suggestions = document.querySelectorAll("#findUserSuggestions li");
+    expect(suggestions.length).toBe(2);
+    expect(suggestions[0].textContent).toBe("bob");
+
+    suggestions[0].click();
+    expect(document.querySelector("#findUserInput").value).toBe("bob");
+  });
+
+  test("openUserProfile renders watchlist, watched movies, and recent reviews", async () => {
+    storage.setViewedUserProfile("bob");
+
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <h2 id="profileUsername"></h2>
+      <p id="profileStatus"></p>
+      <ul id="profileWatchlist"></ul>
+      <ul id="profileWatched"></ul>
+      <ul id="profileRecentReviews"></ul>
+    `);
+
+    jest.spyOn(api, "fetchUserProfile").mockResolvedValue({
+      found: true,
+      profile: {
+        username: "bob",
+        watchlist: ["Dune", "Arrival"],
+        watched: {
+          "Inception": { rating: "5", review: "Great." },
+          "Interstellar": { rating: "4", review: "" },
+          "Memento": { rating: "4", review: "Very clever." }
+        }
+      }
+    });
+
+    await app.openUserProfile(fakeDocument);
+
+    expect(document.querySelector("#profileUsername").textContent).toBe("bob's Profile");
+    expect(document.querySelectorAll("#profileWatchlist li").length).toBe(2);
+    expect(document.querySelectorAll("#profileWatched li").length).toBe(3);
+    expect(document.querySelectorAll("#profileRecentReviews li").length).toBe(2);
+    expect(document.querySelector("#profileRecentReviews").textContent).toContain("Memento");
   });
 
   test("openMovie renders selected movie and loads/saves review updates", async () => {

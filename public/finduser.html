@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="scripts/storage.js"></script>
+  <script type="text/javascript" src="scripts/api.js"></script>
+  <script type="text/javascript" src="scripts/ui.js"></script>
+  <script type="text/javascript" src="scripts/app.js"></script>
+  <script type="text/javascript" src="scripts/scripts.js"></script>
+  <link rel="stylesheet" href="styles/styles.css">
+  <title>Find a User</title>
+</head>
+
+<body onload="openfinduser()">
+  <div class="top-bar">
+    <img src="logo.png" width="300" height="55">
+  </div>
+  <div class="page-spacer"></div>
+
+  <nav class="nav-bar">
+    <a class="mymovies" href="mymovies.html">My Movies</a>
+    <a class="watchlist" href="watchlist.html">Watchlist</a>
+    <a class="search" href="search.html">Search</a>
+    <a class="finduser" href="finduser.html">Find a User</a>
+    <a class="signout" href="signin.html">Sign Out</a>
+  </nav>
+
+  <main class="page-shell">
+    <section class="panel find-user-panel">
+      <h2>Find a User</h2>
+      <p class="panel-subtitle">Look up a username to view their watchlist, watched movies, and recent reviews.</p>
+      <input id="findUserInput" type="text" placeholder="Enter username" />
+      <ul id="findUserSuggestions" class="user-suggestions-list"></ul>
+      <div class="signUpButtonsDiv">
+        <button id="findUserButton">View Profile</button>
+      </div>
+      <p id="findUserStatus"></p>
+    </section>
+  </main>
+</body>
+
+</html>

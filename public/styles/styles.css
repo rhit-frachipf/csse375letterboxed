@@ -206,6 +206,74 @@ ul#moviesList li:hover {
     margin-top: 8px;
 }
 
+#searchStatus {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+#findUserStatus,
+#profileStatus {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.find-user-panel {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.panel-subtitle {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--muted);
+}
+
+.user-suggestions-list {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    width: 100%;
+    max-width: 360px;
+}
+
+.user-suggestion-item {
+    padding: 9px 12px;
+    border: 1px solid #2f3b42;
+    border-radius: 8px;
+    background-color: #171f24;
+    margin-bottom: 6px;
+    cursor: pointer;
+}
+
+.user-suggestion-item:hover {
+    border-color: #4a5d67;
+    background-color: #1b252b;
+}
+
+.user-profile-panel h3 {
+    margin-bottom: 8px;
+}
+
+.user-profile-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px;
+}
+
+.user-profile-list li {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    border: 1px solid #2f3b42;
+    background-color: #171f24;
+}
+
+.empty-list-item {
+    color: var(--muted);
+}
+
 .search-result-card {
     width: 150px;
     cursor: pointer;

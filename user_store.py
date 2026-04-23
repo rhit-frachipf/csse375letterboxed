@@ -53,6 +53,27 @@ class UserRepository:
                 return user
         return None
 
+    def search_usernames(self, query, limit=8, exclude_username=None) -> List[str]:
+        normalized_query = (query or "").strip().lower()
+        if not normalized_query:
+            return []
+
+        normalized_exclude = (exclude_username or "").strip().lower()
+        matched = []
+        for user in self._load_users():
+            username = user.username or ""
+            normalized_username = username.lower()
+            if normalized_exclude and normalized_username == normalized_exclude:
+                continue
+            if normalized_query in normalized_username:
+                matched.append(username)
+
+        matched.sort(key=lambda username: (
+            0 if username.lower().startswith(normalized_query) else 1,
+            username.lower(),
+        ))
+        return matched[:limit]
+
     def create_user(self, username, password) -> Optional[User]:
         if self.find_by_username(username):
             return None

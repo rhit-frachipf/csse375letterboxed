@@ -215,6 +215,66 @@ class HttpServerTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), [])
 
+    def test_get_user_profile_returns_profile_when_user_exists(self):
+        self.login_as_alice()
+
+        response = self.client.get("/get-user-profile", query_string={"username": "alice"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["found"], True)
+        self.assertEqual(payload["profile"]["username"], "alice")
+        self.assertIn("Dune", payload["profile"]["watchlist"])
+        self.assertIn("Inception", payload["profile"]["watched"])
+
+    def test_get_user_profile_returns_not_found_for_unknown_user(self):
+        self.login_as_alice()
+
+        response = self.client.get("/get-user-profile", query_string={"username": "does-not-exist"})
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.get_json()["found"], False)
+
+    def test_get_user_profile_requires_login(self):
+        response = self.client.get("/get-user-profile", query_string={"username": "alice"})
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["found"], False)
+
+    def test_get_user_suggestions_returns_matching_usernames(self):
+        self.fake_db.get(self.users_list_key).extend([
+            {
+                "username": "bob",
+                "password": "pw",
+                "watched": {},
+                "whattowatch": [],
+            },
+            {
+                "username": "bobby",
+                "password": "pw",
+                "watched": {},
+                "whattowatch": [],
+            },
+            {
+                "username": "charlie",
+                "password": "pw",
+                "watched": {},
+                "whattowatch": [],
+            },
+        ])
+
+        self.login_as_alice()
+        response = self.client.get("/get-user-suggestions", query_string={"query": "bo"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), ["bob", "bobby"])
+
+    def test_get_user_suggestions_requires_login(self):
+        response = self.client.get("/get-user-suggestions", query_string={"query": "a"})
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json(), [])
+
     def test_second_user_watched_is_independent_from_first(self):
         # Pins that two users' watched dicts are fully isolated from each other.
         # Adding "see other users' ratings" must not merge or cross-contaminate

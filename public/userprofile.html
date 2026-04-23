@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="scripts/storage.js"></script>
+  <script type="text/javascript" src="scripts/api.js"></script>
+  <script type="text/javascript" src="scripts/ui.js"></script>
+  <script type="text/javascript" src="scripts/app.js"></script>
+  <script type="text/javascript" src="scripts/scripts.js"></script>
+  <link rel="stylesheet" href="styles/styles.css">
+  <title>User Profile</title>
+</head>
+
+<body onload="openuserprofile()">
+  <div class="top-bar">
+    <img src="logo.png" width="300" height="55">
+  </div>
+  <div class="page-spacer"></div>
+
+  <nav class="nav-bar">
+    <a class="mymovies" href="mymovies.html">My Movies</a>
+    <a class="watchlist" href="watchlist.html">Watchlist</a>
+    <a class="search" href="search.html">Search</a>
+    <a class="finduser" href="finduser.html">Find a User</a>
+    <a class="signout" href="signin.html">Sign Out</a>
+  </nav>
+
+  <main class="page-shell">
+    <section class="panel user-profile-panel">
+      <h2 id="profileUsername">User Profile</h2>
+      <p id="profileStatus"></p>
+
+      <h3>Watchlist</h3>
+      <ul id="profileWatchlist" class="user-profile-list"></ul>
+
+      <h3>Watched Movies</h3>
+      <ul id="profileWatched" class="user-profile-list"></ul>
+
+      <h3>Recent Reviews</h3>
+      <ul id="profileRecentReviews" class="user-profile-list"></ul>
+    </section>
+  </main>
+</body>
+
+</html>

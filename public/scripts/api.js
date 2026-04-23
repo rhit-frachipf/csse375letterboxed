@@ -52,12 +52,29 @@
         return response.json();
     }
 
+    async function fetchUserProfile(username, fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient(
+            `/get-user-profile?username=${encodeURIComponent(username || "")}`
+        );
+        return response.json();
+    }
+
+    async function fetchUserSuggestions(query, fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient(
+            `/get-user-suggestions?query=${encodeURIComponent(query || "")}`
+        );
+        return response.json();
+    }
+
     function normalizeMovie(payload) {
         return {
             title: payload.Title,
             year: payload.Year,
             plot: payload.Plot,
             genre: payload.Genre,
+            director: payload.Director,
             poster: payload.Poster,
         };
     }
@@ -104,6 +121,8 @@
         addToWatched,
         fetchWatched,
         fetchWatchlist,
+        fetchUserProfile,
+        fetchUserSuggestions,
         fetchMovieByTitle,
         fetchPosterByTitle,
         searchMovies,

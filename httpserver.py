@@ -46,6 +46,17 @@ def current_user():
     return user_repository.find_by_username(username)
 
 
+def user_public_profile(user):
+    if not user:
+        return None
+
+    return {
+        "username": user.username,
+        "watchlist": list(user.whattowatch),
+        "watched": dict(user.watched),
+    }
+
+
 def addToWatchList(movie):
     user = current_user()
     if not user:
@@ -72,6 +83,44 @@ def get_watched():
 def get_watchlist():
     user = current_user()
     return flask.jsonify(user.whattowatch if user else [])
+
+
+@app.route('/get-user-profile')
+def get_user_profile():
+    if not current_user():
+        return flask.jsonify({"found": False}), 401
+
+    username = (flask.request.args.get("username") or "").strip()
+    if not username:
+        return flask.jsonify({"found": False}), 400
+
+    user = user_repository.find_by_username(username)
+    profile = user_public_profile(user)
+    if not profile:
+        return flask.jsonify({"found": False}), 404
+
+    return flask.jsonify({
+        "found": True,
+        "profile": profile,
+    })
+
+
+@app.route('/get-user-suggestions')
+def get_user_suggestions():
+    user = current_user()
+    if not user:
+        return flask.jsonify([]), 401
+
+    query = (flask.request.args.get("query") or "").strip()
+    if not query:
+        return flask.jsonify([])
+
+    suggestions = user_repository.search_usernames(
+        query,
+        limit=8,
+        exclude_username=user.username,
+    )
+    return flask.jsonify(suggestions)
 
 @app.post('/add-to-watchlist')
 def add_to_watchlist():

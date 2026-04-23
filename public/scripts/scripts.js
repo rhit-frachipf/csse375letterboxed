@@ -12,5 +12,7 @@
     root.openwatchlist = app.openWatchlist;
     root.opensearch = app.openSearch;
     root.openmovie = app.openMovie;
+    root.openfinduser = app.openFindUser;
+    root.openuserprofile = app.openUserProfile;
     return app;
 });
