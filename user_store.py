@@ -4,6 +4,12 @@ import time
 
 
 USERS_LIST_KEY = "usersList"
+DEFAULT_PRIVACY_SETTINGS = {
+    "showWatchlist": True,
+    "showRatings": True,
+    "showReviews": True,
+    "showActivity": True,
+}
 
 
 @dataclass
@@ -14,6 +20,7 @@ class User:
     whattowatch: List[str] = field(default_factory=list)
     following: List[str] = field(default_factory=list)
     activity: List[Dict[str, str]] = field(default_factory=list)
+    privacy: Dict[str, bool] = field(default_factory=lambda: dict(DEFAULT_PRIVACY_SETTINGS))
 
     @classmethod
     def from_dict(cls, payload):
@@ -24,6 +31,12 @@ class User:
             whattowatch=list(payload.get("whattowatch", [])),
             following=list(payload.get("following", [])),
             activity=list(payload.get("activity", [])),
+            privacy={
+                "showWatchlist": bool(payload.get("privacy", {}).get("showWatchlist", True)),
+                "showRatings": bool(payload.get("privacy", {}).get("showRatings", True)),
+                "showReviews": bool(payload.get("privacy", {}).get("showReviews", True)),
+                "showActivity": bool(payload.get("privacy", {}).get("showActivity", True)),
+            },
         )
 
     def to_dict(self):
@@ -34,6 +47,7 @@ class User:
             "whattowatch": list(self.whattowatch),
             "following": list(self.following),
             "activity": list(self.activity),
+            "privacy": dict(self.privacy),
         }
 
 
@@ -128,27 +142,6 @@ class UserRepository:
         self.update_user(user)
         return True
 
-    def search_usernames(self, query, limit=8, exclude_username=None) -> List[str]:
-        normalized_query = (query or "").strip().lower()
-        if not normalized_query:
-            return []
-
-        normalized_exclude = (exclude_username or "").strip().lower()
-        matched = []
-        for user in self._load_users():
-            username = user.username or ""
-            normalized_username = username.lower()
-            if normalized_exclude and normalized_username == normalized_exclude:
-                continue
-            if normalized_query in normalized_username:
-                matched.append(username)
-
-        matched.sort(key=lambda username: (
-            0 if username.lower().startswith(normalized_query) else 1,
-            username.lower(),
-        ))
-        return matched[:limit]
-
     def follow_user(self, username, target_username) -> bool:
         if not username or not target_username or username == target_username:
             return False
@@ -211,6 +204,8 @@ class UserRepository:
             followed_user = self.find_by_username(followed_username)
             if not followed_user:
                 continue
+            if not followed_user.privacy.get("showActivity", True):
+                continue
 
             for activity_entry in followed_user.activity:
                 item = dict(activity_entry)
@@ -220,6 +215,66 @@ class UserRepository:
 
         feed_items.sort(key=lambda item: item.get("timestamp", 0), reverse=True)
         return feed_items[:limit]
+
+    def get_privacy_settings(self, username) -> Dict[str, bool]:
+        user = self.find_by_username(username)
+        if not user:
+            return dict(DEFAULT_PRIVACY_SETTINGS)
+        return {
+            "showWatchlist": bool(user.privacy.get("showWatchlist", True)),
+            "showRatings": bool(user.privacy.get("showRatings", True)),
+            "showReviews": bool(user.privacy.get("showReviews", True)),
+            "showActivity": bool(user.privacy.get("showActivity", True)),
+        }
+
+    def update_privacy_settings(self, username, privacy_settings) -> bool:
+        user = self.find_by_username(username)
+        if not user:
+            return False
+
+        user.privacy = {
+            "showWatchlist": bool(privacy_settings.get("showWatchlist", True)),
+            "showRatings": bool(privacy_settings.get("showRatings", True)),
+            "showReviews": bool(privacy_settings.get("showReviews", True)),
+            "showActivity": bool(privacy_settings.get("showActivity", True)),
+        }
+        self.update_user(user)
+        return True
+
+    def update_password(self, username, current_password, new_password) -> bool:
+        if not new_password:
+            return False
+
+        user = self.find_by_username(username)
+        if not user or user.password != current_password:
+            return False
+
+        user.password = new_password
+        self.update_user(user)
+        return True
+
+    def rename_user(self, username, new_username, current_password) -> Optional[User]:
+        if not new_username:
+            return None
+
+        user = self.find_by_username(username)
+        if not user or user.password != current_password:
+            return None
+
+        if self.find_by_username(new_username):
+            return None
+
+        users = self._load_users()
+        for existing_user in users:
+            if existing_user.username == username:
+                existing_user.username = new_username
+            existing_user.following = [
+                new_username if followed_username == username else followed_username
+                for followed_username in existing_user.following
+            ]
+
+        self._save_users(users)
+        return self.find_by_username(new_username)
 
 
 class AuthService:

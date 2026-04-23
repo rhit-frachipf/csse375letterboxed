@@ -39,6 +39,10 @@ def bool_response(value, status=200):
     return flask.jsonify(bool(value)), status
 
 
+def to_bool(raw_value):
+    return str(raw_value).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def current_user():
     username = flask.session.get("username")
     if not username:
@@ -46,14 +50,45 @@ def current_user():
     return user_repository.find_by_username(username)
 
 
-def user_public_profile(user):
+def user_public_profile(user, viewer=None):
     if not user:
         return None
 
+    is_self = bool(viewer and viewer.username == user.username)
+    privacy = user_repository.get_privacy_settings(user.username)
+
+    watchlist = list(user.whattowatch)
+    watched_payload = dict(user.watched)
+
+    if not is_self:
+        if not privacy.get("showWatchlist", True):
+            watchlist = []
+
+        show_ratings = privacy.get("showRatings", True)
+        show_reviews = privacy.get("showReviews", True)
+        filtered_watched = {}
+        for title, watched_value in watched_payload.items():
+            has_review_object = watched_value and isinstance(watched_value, dict)
+            rating = str(watched_value.get("rating", "")).strip() if has_review_object else str(watched_value or "").strip()
+            review = str(watched_value.get("review", "")).strip() if has_review_object else ""
+
+            if show_ratings and show_reviews:
+                filtered_watched[title] = {
+                    "rating": rating,
+                    "review": review,
+                }
+            elif show_ratings:
+                filtered_watched[title] = rating
+            elif show_reviews and review:
+                filtered_watched[title] = {"review": review}
+
+        watched_payload = filtered_watched
+
     return {
         "username": user.username,
-        "watchlist": list(user.whattowatch),
-        "watched": dict(user.watched),
+        "watchlist": watchlist,
+        "watched": watched_payload,
+        "privacy": privacy,
     }
 
 
@@ -113,7 +148,7 @@ def get_user_profile():
         return flask.jsonify({"found": False}), 400
 
     user = user_repository.find_by_username(username)
-    profile = user_public_profile(user)
+    profile = user_public_profile(user, viewer)
     if not profile:
         return flask.jsonify({"found": False}), 404
 
@@ -122,6 +157,7 @@ def get_user_profile():
         "profile": profile,
         "isFollowing": user_repository.is_following(viewer.username, user.username),
         "isSelf": viewer.username == user.username,
+        "visibility": profile.get("privacy", {}),
     })
 
 
@@ -185,6 +221,63 @@ def get_activity_feed():
     limit = max(1, min(limit, 100))
 
     return flask.jsonify(user_repository.get_activity_feed(user.username, limit=limit))
+
+
+@app.route('/get-settings')
+def get_settings():
+    user = current_user()
+    if not user:
+        return flask.jsonify({}), 401
+
+    return flask.jsonify({
+        "username": user.username,
+        "privacy": user_repository.get_privacy_settings(user.username),
+    })
+
+
+@app.post('/update-privacy-settings')
+def update_privacy_settings():
+    user = current_user()
+    if not user:
+        return bool_response(False, 401)
+
+    post_data = flask.request.form
+    privacy_settings = {
+        "showWatchlist": to_bool(post_data.get("showWatchlist", "true")),
+        "showRatings": to_bool(post_data.get("showRatings", "true")),
+        "showReviews": to_bool(post_data.get("showReviews", "true")),
+        "showActivity": to_bool(post_data.get("showActivity", "true")),
+    }
+    return bool_response(user_repository.update_privacy_settings(user.username, privacy_settings))
+
+
+@app.post('/update-password')
+def update_password():
+    user = current_user()
+    if not user:
+        return bool_response(False, 401)
+
+    post_data = flask.request.form
+    current_password = post_data.get("currentPassword")
+    new_password = post_data.get("newPassword")
+    return bool_response(user_repository.update_password(user.username, current_password, new_password))
+
+
+@app.post('/update-username')
+def update_username():
+    user = current_user()
+    if not user:
+        return bool_response(False, 401)
+
+    post_data = flask.request.form
+    new_username = (post_data.get("newUsername") or "").strip()
+    current_password = post_data.get("currentPassword")
+    renamed_user = user_repository.rename_user(user.username, new_username, current_password)
+    if not renamed_user:
+        return bool_response(False)
+
+    flask.session["username"] = renamed_user.username
+    return bool_response(True)
 
 @app.post('/add-to-watchlist')
 def add_to_watchlist():

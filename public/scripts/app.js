@@ -454,6 +454,19 @@
         });
     }
 
+    function applyTheme(theme, documentRef) {
+        const doc = documentRef || root.document;
+        if (!doc || !doc.body) {
+            return;
+        }
+
+        if (theme === "light") {
+            doc.body.classList.add("light-mode");
+        } else {
+            doc.body.classList.remove("light-mode");
+        }
+    }
+
     async function openFindUser(documentRef) {
         const doc = documentRef || root.document;
         bindSignOut(doc);
@@ -557,6 +570,7 @@
         }
 
         const profile = response.profile;
+        const visibility = response.visibility || {};
         if (usernameHeading) {
             usernameHeading.textContent = `${profile.username}'s Profile`;
         }
@@ -605,8 +619,10 @@
             const hasReviewObject = watchedValue && typeof watchedValue === "object";
             const rating = hasReviewObject ? watchedValue.rating : watchedValue;
             const review = hasReviewObject ? watchedValue.review || "" : "";
+            const hasRating = Boolean((rating || "").toString().trim());
+            const ratingLabel = hasRating ? `${rating} stars` : "No rating shared";
             const reviewSuffix = review ? ` - \"${review}\"` : "";
-            return `${title}; ${rating} stars${reviewSuffix}`;
+            return `${title}; ${ratingLabel}${reviewSuffix}`;
         });
 
         const recentReviews = buildRecentReviews(profile.watched || {}).map(
@@ -616,23 +632,134 @@
         renderSimpleList(
             doc.querySelector("#profileWatchlist"),
             profile.watchlist || [],
-            "No watchlist movies yet.",
+            response.isSelf || visibility.showWatchlist !== false
+                ? "No watchlist movies yet."
+                : "This user's watchlist is private.",
             doc
         );
 
         renderSimpleList(
             doc.querySelector("#profileWatched"),
             watchedEntries,
-            "No watched movies yet.",
+            response.isSelf || visibility.showRatings !== false || visibility.showReviews !== false
+                ? "No watched movies yet."
+                : "This user's ratings and reviews are private.",
             doc
         );
 
         renderSimpleList(
             doc.querySelector("#profileRecentReviews"),
             recentReviews,
-            "No recent written reviews yet.",
+            response.isSelf || visibility.showReviews !== false
+                ? "No recent written reviews yet."
+                : "This user's reviews are private.",
             doc
         );
+    }
+
+    async function openSettings(documentRef) {
+        const doc = documentRef || root.document;
+        bindSignOut(doc);
+
+        const settingsResponse = await api.fetchSettings();
+        const settingsStatus = doc.querySelector("#settingsStatus");
+        const usernameInput = doc.querySelector("#settingsUsername");
+        const showWatchlist = doc.querySelector("#privacyWatchlist");
+        const showRatings = doc.querySelector("#privacyRatings");
+        const showReviews = doc.querySelector("#privacyReviews");
+        const showActivity = doc.querySelector("#privacyActivity");
+        const savePrivacyButton = doc.querySelector("#savePrivacyButton");
+        const updatePasswordButton = doc.querySelector("#updatePasswordButton");
+        const updateUsernameButton = doc.querySelector("#updateUsernameButton");
+        const currentPasswordForUsername = doc.querySelector("#currentPasswordForUsername");
+        const newUsernameInput = doc.querySelector("#newUsername");
+        const currentPassword = doc.querySelector("#currentPassword");
+        const newPassword = doc.querySelector("#newPassword");
+        const passwordStatus = doc.querySelector("#passwordStatus");
+        const usernameStatus = doc.querySelector("#usernameStatus");
+        const themeToggle = doc.querySelector("#themeToggle");
+        const themeStatus = doc.querySelector("#themeStatus");
+
+        if (usernameInput && settingsResponse.username) {
+            usernameInput.value = settingsResponse.username;
+        }
+
+        const privacy = settingsResponse.privacy || {};
+        if (showWatchlist) {
+            showWatchlist.checked = privacy.showWatchlist !== false;
+        }
+        if (showRatings) {
+            showRatings.checked = privacy.showRatings !== false;
+        }
+        if (showReviews) {
+            showReviews.checked = privacy.showReviews !== false;
+        }
+        if (showActivity) {
+            showActivity.checked = privacy.showActivity !== false;
+        }
+
+        if (savePrivacyButton) {
+            savePrivacyButton.addEventListener("click", async () => {
+                const wasSuccessful = await api.updatePrivacySettings({
+                    showWatchlist: showWatchlist ? showWatchlist.checked : true,
+                    showRatings: showRatings ? showRatings.checked : true,
+                    showReviews: showReviews ? showReviews.checked : true,
+                    showActivity: showActivity ? showActivity.checked : true,
+                });
+
+                if (settingsStatus) {
+                    settingsStatus.textContent = wasSuccessful
+                        ? "Privacy settings updated."
+                        : "Could not update privacy settings.";
+                }
+            });
+        }
+
+        if (updatePasswordButton) {
+            updatePasswordButton.addEventListener("click", async () => {
+                const wasSuccessful = await api.updatePassword(
+                    currentPassword ? currentPassword.value : "",
+                    newPassword ? newPassword.value : ""
+                );
+                if (passwordStatus) {
+                    passwordStatus.textContent = wasSuccessful
+                        ? "Password updated."
+                        : "Could not update password.";
+                }
+            });
+        }
+
+        if (updateUsernameButton) {
+            updateUsernameButton.addEventListener("click", async () => {
+                const wasSuccessful = await api.updateUsername(
+                    newUsernameInput ? newUsernameInput.value.trim() : "",
+                    currentPasswordForUsername ? currentPasswordForUsername.value : ""
+                );
+
+                if (usernameStatus) {
+                    usernameStatus.textContent = wasSuccessful
+                        ? "Username updated."
+                        : "Could not update username.";
+                }
+
+                if (wasSuccessful && usernameInput && newUsernameInput) {
+                    usernameInput.value = newUsernameInput.value.trim();
+                    newUsernameInput.value = "";
+                }
+            });
+        }
+
+        if (themeToggle) {
+            themeToggle.checked = storage.getTheme() === "light";
+            themeToggle.addEventListener("change", () => {
+                const theme = themeToggle.checked ? "light" : "dark";
+                storage.setTheme(theme);
+                applyTheme(theme, doc);
+                if (themeStatus) {
+                    themeStatus.textContent = theme === "light" ? "Light mode enabled." : "Dark mode enabled.";
+                }
+            });
+        }
     }
 
     return {
@@ -647,6 +774,7 @@
         openMovie,
         openFindUser,
         openUserProfile,
+        openSettings,
         requireSelectedMovie,
         selectMovieAndOpen,
     };

@@ -289,6 +289,99 @@ class HttpServerTests(unittest.TestCase):
         self.assertEqual(feed[0]["username"], "bob")
         self.assertIn(feed[0]["type"], ["rated_movie", "watchlist_added", "watchlist_removed"])
 
+    def test_update_privacy_settings_hides_profile_fields_for_other_users(self):
+        self.fake_db.get(self.users_list_key).append({
+            "username": "bob",
+            "password": "pw",
+            "watched": {
+                "Arrival": {
+                    "rating": "4",
+                    "review": "Nice film",
+                }
+            },
+            "whattowatch": ["Dune"],
+        })
+
+        self.client.post("/API/LOGIN", data={"username": "bob", "password": "pw"})
+        self.client.post("/update-privacy-settings", data={
+            "showWatchlist": "false",
+            "showRatings": "false",
+            "showReviews": "false",
+            "showActivity": "true",
+        })
+
+        self.login_as_alice()
+        response = self.client.get("/get-user-profile", query_string={"username": "bob"})
+        payload = response.get_json()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["profile"]["watchlist"], [])
+        self.assertEqual(payload["profile"]["watched"], {})
+
+    def test_update_password_requires_correct_current_password(self):
+        self.login_as_alice()
+
+        bad_response = self.client.post("/update-password", data={
+            "currentPassword": "wrong",
+            "newPassword": "newpass",
+        })
+        self.assertEqual(bad_response.get_json(), False)
+
+        ok_response = self.client.post("/update-password", data={
+            "currentPassword": "pass123",
+            "newPassword": "newpass",
+        })
+        self.assertEqual(ok_response.get_json(), True)
+
+        login_response = self.client.post("/API/LOGIN", data={
+            "username": "alice",
+            "password": "newpass",
+        })
+        self.assertEqual(login_response.get_json(), True)
+
+    def test_update_username_updates_login_identity(self):
+        self.login_as_alice()
+
+        response = self.client.post("/update-username", data={
+            "newUsername": "alice2",
+            "currentPassword": "pass123",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), True)
+
+        with self.client.session_transaction() as session_state:
+            self.assertEqual(session_state["username"], "alice2")
+
+        users = httpserver.db.get(self.users_list_key)
+        usernames = [user["username"] for user in users]
+        self.assertIn("alice2", usernames)
+        self.assertNotIn("alice", usernames)
+
+    def test_private_activity_not_in_feed(self):
+        self.fake_db.get(self.users_list_key).append({
+            "username": "bob",
+            "password": "pw",
+            "watched": {},
+            "whattowatch": [],
+            "privacy": {
+                "showWatchlist": True,
+                "showRatings": True,
+                "showReviews": True,
+                "showActivity": False,
+            },
+        })
+
+        self.client.post("/API/LOGIN", data={"username": "bob", "password": "pw"})
+        self.client.post("/add-to-watchlist", data={"movie": "Arrival"})
+
+        self.login_as_alice()
+        self.client.post("/follow-user", data={"username": "bob"})
+        feed_response = self.client.get("/get-activity-feed")
+
+        self.assertEqual(feed_response.status_code, 200)
+        self.assertEqual(feed_response.get_json(), [])
+
     def test_get_user_suggestions_returns_matching_usernames(self):
         self.fake_db.get(self.users_list_key).extend([
             {

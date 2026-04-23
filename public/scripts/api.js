@@ -89,6 +89,29 @@
         return response.json();
     }
 
+    async function fetchSettings(fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient("/get-settings");
+        return response.json();
+    }
+
+    async function updatePrivacySettings(privacy, fetchImpl) {
+        return postForm("/update-privacy-settings", {
+            showWatchlist: privacy.showWatchlist,
+            showRatings: privacy.showRatings,
+            showReviews: privacy.showReviews,
+            showActivity: privacy.showActivity,
+        }, fetchImpl);
+    }
+
+    async function updatePassword(currentPassword, newPassword, fetchImpl) {
+        return postForm("/update-password", { currentPassword, newPassword }, fetchImpl);
+    }
+
+    async function updateUsername(newUsername, currentPassword, fetchImpl) {
+        return postForm("/update-username", { newUsername, currentPassword }, fetchImpl);
+    }
+
     function normalizeMovie(payload) {
         return {
             title: payload.Title,
@@ -148,6 +171,10 @@
         unfollowUser,
         fetchFollowing,
         fetchActivityFeed,
+        fetchSettings,
+        updatePrivacySettings,
+        updatePassword,
+        updateUsername,
         fetchMovieByTitle,
         fetchPosterByTitle,
         searchMovies,

@@ -12,6 +12,7 @@
             loggedIn: false,
             selectedMovie: null,
             viewedUserProfile: null,
+            theme: "dark",
         };
     }
 
@@ -26,6 +27,7 @@
                 loggedIn: Boolean(parsed.loggedIn),
                 selectedMovie: parsed.selectedMovie || null,
                 viewedUserProfile: parsed.viewedUserProfile || null,
+                theme: parsed.theme === "light" ? "light" : "dark",
             };
         } catch (error) {
             return createDefaultState();
@@ -51,6 +53,7 @@
             loggedIn: Boolean(state.loggedIn),
             selectedMovie: state.selectedMovie || null,
             viewedUserProfile: state.viewedUserProfile || null,
+            theme: state.theme === "light" ? "light" : "dark",
         };
         storageProvider.setItem(STORAGE_KEY, JSON.stringify(nextState));
         return nextState;
@@ -83,6 +86,17 @@
         return state.viewedUserProfile;
     }
 
+    function setTheme(theme, storageProvider) {
+        const state = loadAppState(storageProvider);
+        state.theme = theme === "light" ? "light" : "dark";
+        return saveAppState(state, storageProvider);
+    }
+
+    function getTheme(storageProvider) {
+        const state = loadAppState(storageProvider);
+        return state.theme === "light" ? "light" : "dark";
+    }
+
     return {
         STORAGE_KEY,
         createDefaultState,
@@ -93,5 +107,7 @@
         clearAppState,
         setViewedUserProfile,
         getViewedUserProfile,
+        setTheme,
+        getTheme,
     };
 });

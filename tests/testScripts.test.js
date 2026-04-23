@@ -29,8 +29,18 @@ describe("storage module", () => {
         plot: "A hacker learns the truth",
         genre: "Sci-Fi",
         poster: "http://example.com/matrix.jpg"
-      }
+      },
+      viewedUserProfile: null,
+      theme: "dark"
     });
+  });
+
+  test("theme defaults to dark and can be updated", () => {
+    expect(storage.getTheme()).toBe("dark");
+    storage.setTheme("light");
+    expect(storage.getTheme()).toBe("light");
+    storage.setTheme("unknown");
+    expect(storage.getTheme()).toBe("dark");
   });
 });
 
@@ -475,6 +485,57 @@ describe("app module", () => {
     expect(document.querySelectorAll("#activityFeed li").length).toBe(2);
     expect(document.querySelector("#activityFeed").textContent).toContain("bob rated Arrival 4 stars");
     expect(document.querySelector("#activityFeed").textContent).toContain("mia added Inception");
+  });
+
+  test("openSettings loads and saves privacy and theme settings", async () => {
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <p id="settingsStatus"></p>
+      <input id="settingsUsername" type="text" />
+      <input id="privacyWatchlist" type="checkbox" />
+      <input id="privacyRatings" type="checkbox" />
+      <input id="privacyReviews" type="checkbox" />
+      <input id="privacyActivity" type="checkbox" />
+      <button id="savePrivacyButton">Save</button>
+      <button id="updatePasswordButton">Update Password</button>
+      <button id="updateUsernameButton">Update Username</button>
+      <input id="currentPasswordForUsername" type="password" />
+      <input id="newUsername" type="text" />
+      <input id="currentPassword" type="password" />
+      <input id="newPassword" type="password" />
+      <p id="passwordStatus"></p>
+      <p id="usernameStatus"></p>
+      <input id="themeToggle" type="checkbox" />
+      <p id="themeStatus"></p>
+    `);
+
+    jest.spyOn(api, "fetchSettings").mockResolvedValue({
+      username: "alice",
+      privacy: {
+        showWatchlist: true,
+        showRatings: true,
+        showReviews: false,
+        showActivity: true
+      }
+    });
+    const privacySpy = jest.spyOn(api, "updatePrivacySettings").mockResolvedValue(true);
+    jest.spyOn(api, "updatePassword").mockResolvedValue(true);
+    jest.spyOn(api, "updateUsername").mockResolvedValue(true);
+
+    await app.openSettings(fakeDocument);
+
+    expect(document.querySelector("#settingsUsername").value).toBe("alice");
+    expect(document.querySelector("#privacyReviews").checked).toBe(false);
+
+    document.querySelector("#privacyReviews").checked = true;
+    document.querySelector("#savePrivacyButton").click();
+    await Promise.resolve();
+
+    expect(privacySpy).toHaveBeenCalled();
+
+    document.querySelector("#themeToggle").checked = true;
+    document.querySelector("#themeToggle").dispatchEvent(new Event("change"));
+    expect(storage.getTheme()).toBe("light");
   });
 
   test("openMovie renders selected movie and loads/saves review updates", async () => {
