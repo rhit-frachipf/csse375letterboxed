@@ -223,7 +223,10 @@
     async function openMyMovies(documentRef) {
         const doc = documentRef || root.document;
         bindSignOut(doc);
-        const watchedMovies = await api.fetchWatched();
+        const [watchedMovies, activityFeed] = await Promise.all([
+            api.fetchWatched(),
+            api.fetchActivityFeed(25),
+        ]);
         const entries = Object.entries(watchedMovies).map(([title, watchedValue]) => {
             const hasReviewObject = watchedValue && typeof watchedValue === "object";
             return {
@@ -247,6 +250,28 @@
             },
             documentRef: doc,
         });
+
+        const feedItems = (Array.isArray(activityFeed) ? activityFeed : []).map((item) => {
+            const username = item.username || "Someone";
+            if (item.type === "rated_movie") {
+                const reviewSuffix = item.review ? ` - \"${item.review}\"` : "";
+                return `${username} rated ${item.movie} ${item.rating} stars${reviewSuffix}`;
+            }
+            if (item.type === "watchlist_added") {
+                return `${username} added ${item.movie} to their watchlist`;
+            }
+            if (item.type === "watchlist_removed") {
+                return `${username} removed ${item.movie} from their watchlist`;
+            }
+            return `${username} updated ${item.movie}`;
+        });
+
+        renderSimpleList(
+            doc.querySelector("#activityFeed"),
+            feedItems,
+            "No activity yet. Follow users from Find a User to populate your feed.",
+            doc
+        );
     }
 
     async function openWatchlist(documentRef) {
@@ -521,6 +546,8 @@
         const response = await api.fetchUserProfile(viewedUsername);
         const usernameHeading = doc.querySelector("#profileUsername");
         const status = doc.querySelector("#profileStatus");
+        const followButton = doc.querySelector("#followUserButton");
+        const followStatus = doc.querySelector("#followUserStatus");
 
         if (!response || !response.found) {
             if (status) {
@@ -535,6 +562,43 @@
         }
         if (status) {
             status.textContent = "";
+        }
+
+        let isFollowing = Boolean(response.isFollowing);
+        const isSelf = Boolean(response.isSelf);
+        if (followButton) {
+            if (isSelf) {
+                followButton.disabled = true;
+                followButton.textContent = "This is you";
+            } else {
+                followButton.disabled = false;
+                followButton.textContent = isFollowing ? "Unfollow" : "Follow";
+
+                followButton.addEventListener("click", async () => {
+                    const wasSuccessful = isFollowing
+                        ? await api.unfollowUser(profile.username)
+                        : await api.followUser(profile.username);
+
+                    if (!wasSuccessful) {
+                        if (followStatus) {
+                            followStatus.textContent = "Could not update follow status.";
+                        }
+                        return;
+                    }
+
+                    isFollowing = !isFollowing;
+                    followButton.textContent = isFollowing ? "Unfollow" : "Follow";
+                    if (followStatus) {
+                        followStatus.textContent = isFollowing
+                            ? `You are now following ${profile.username}.`
+                            : `You unfollowed ${profile.username}.`;
+                    }
+                });
+            }
+        }
+
+        if (followStatus && isSelf) {
+            followStatus.textContent = "";
         }
 
         const watchedEntries = Object.entries(profile.watched || {}).map(([title, watchedValue]) => {

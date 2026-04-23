@@ -383,6 +383,8 @@ describe("app module", () => {
       <a class="signout" href="signin.html">Sign Out</a>
       <h2 id="profileUsername"></h2>
       <p id="profileStatus"></p>
+      <button id="followUserButton"></button>
+      <p id="followUserStatus"></p>
       <ul id="profileWatchlist"></ul>
       <ul id="profileWatched"></ul>
       <ul id="profileRecentReviews"></ul>
@@ -390,6 +392,8 @@ describe("app module", () => {
 
     jest.spyOn(api, "fetchUserProfile").mockResolvedValue({
       found: true,
+      isFollowing: false,
+      isSelf: false,
       profile: {
         username: "bob",
         watchlist: ["Dune", "Arrival"],
@@ -408,6 +412,69 @@ describe("app module", () => {
     expect(document.querySelectorAll("#profileWatched li").length).toBe(3);
     expect(document.querySelectorAll("#profileRecentReviews li").length).toBe(2);
     expect(document.querySelector("#profileRecentReviews").textContent).toContain("Memento");
+    expect(document.querySelector("#followUserButton").textContent).toBe("Follow");
+  });
+
+  test("openUserProfile follow button toggles follow state", async () => {
+    storage.setViewedUserProfile("bob");
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <h2 id="profileUsername"></h2>
+      <p id="profileStatus"></p>
+      <button id="followUserButton"></button>
+      <p id="followUserStatus"></p>
+      <ul id="profileWatchlist"></ul>
+      <ul id="profileWatched"></ul>
+      <ul id="profileRecentReviews"></ul>
+    `);
+
+    jest.spyOn(api, "fetchUserProfile").mockResolvedValue({
+      found: true,
+      isFollowing: false,
+      isSelf: false,
+      profile: {
+        username: "bob",
+        watchlist: [],
+        watched: {}
+      }
+    });
+    const followSpy = jest.spyOn(api, "followUser").mockResolvedValue(true);
+    const unfollowSpy = jest.spyOn(api, "unfollowUser").mockResolvedValue(true);
+
+    await app.openUserProfile(fakeDocument);
+
+    document.querySelector("#followUserButton").click();
+    await Promise.resolve();
+    expect(followSpy).toHaveBeenCalledWith("bob");
+    expect(document.querySelector("#followUserButton").textContent).toBe("Unfollow");
+
+    document.querySelector("#followUserButton").click();
+    await Promise.resolve();
+    expect(unfollowSpy).toHaveBeenCalledWith("bob");
+    expect(document.querySelector("#followUserButton").textContent).toBe("Follow");
+  });
+
+  test("openMyMovies renders activity feed messages", async () => {
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <ul id="moviesList"></ul>
+      <ul id="activityFeed"></ul>
+    `);
+
+    jest.spyOn(api, "fetchWatched").mockResolvedValue({
+      Dune: { rating: "5", review: "Epic." }
+    });
+    jest.spyOn(api, "fetchPosterByTitle").mockResolvedValue("http://example.com/dune.jpg");
+    jest.spyOn(api, "fetchActivityFeed").mockResolvedValue([
+      { username: "bob", type: "rated_movie", movie: "Arrival", rating: "4", review: "Great." },
+      { username: "mia", type: "watchlist_added", movie: "Inception" }
+    ]);
+
+    await app.openMyMovies(fakeDocument);
+
+    expect(document.querySelectorAll("#activityFeed li").length).toBe(2);
+    expect(document.querySelector("#activityFeed").textContent).toContain("bob rated Arrival 4 stars");
+    expect(document.querySelector("#activityFeed").textContent).toContain("mia added Inception");
   });
 
   test("openMovie renders selected movie and loads/saves review updates", async () => {

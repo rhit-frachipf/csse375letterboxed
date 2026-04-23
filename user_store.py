@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
+import time
 
 
 USERS_LIST_KEY = "usersList"
@@ -11,6 +12,8 @@ class User:
     password: str
     watched: Dict[str, str] = field(default_factory=dict)
     whattowatch: List[str] = field(default_factory=list)
+    following: List[str] = field(default_factory=list)
+    activity: List[Dict[str, str]] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, payload):
@@ -19,6 +22,8 @@ class User:
             password=payload.get("password", ""),
             watched=dict(payload.get("watched", {})),
             whattowatch=list(payload.get("whattowatch", [])),
+            following=list(payload.get("following", [])),
+            activity=list(payload.get("activity", [])),
         )
 
     def to_dict(self):
@@ -27,6 +32,8 @@ class User:
             "password": self.password,
             "watched": dict(self.watched),
             "whattowatch": list(self.whattowatch),
+            "following": list(self.following),
+            "activity": list(self.activity),
         }
 
 
@@ -120,6 +127,99 @@ class UserRepository:
         }
         self.update_user(user)
         return True
+
+    def search_usernames(self, query, limit=8, exclude_username=None) -> List[str]:
+        normalized_query = (query or "").strip().lower()
+        if not normalized_query:
+            return []
+
+        normalized_exclude = (exclude_username or "").strip().lower()
+        matched = []
+        for user in self._load_users():
+            username = user.username or ""
+            normalized_username = username.lower()
+            if normalized_exclude and normalized_username == normalized_exclude:
+                continue
+            if normalized_query in normalized_username:
+                matched.append(username)
+
+        matched.sort(key=lambda username: (
+            0 if username.lower().startswith(normalized_query) else 1,
+            username.lower(),
+        ))
+        return matched[:limit]
+
+    def follow_user(self, username, target_username) -> bool:
+        if not username or not target_username or username == target_username:
+            return False
+
+        user = self.find_by_username(username)
+        target_user = self.find_by_username(target_username)
+        if not user or not target_user:
+            return False
+
+        if target_username in user.following:
+            return True
+
+        user.following.append(target_username)
+        self.update_user(user)
+        return True
+
+    def unfollow_user(self, username, target_username) -> bool:
+        user = self.find_by_username(username)
+        if not user:
+            return False
+
+        if target_username not in user.following:
+            return True
+
+        user.following.remove(target_username)
+        self.update_user(user)
+        return True
+
+    def is_following(self, username, target_username) -> bool:
+        user = self.find_by_username(username)
+        if not user:
+            return False
+        return target_username in user.following
+
+    def list_following(self, username) -> List[str]:
+        user = self.find_by_username(username)
+        if not user:
+            return []
+        return list(user.following)
+
+    def add_activity(self, username, activity_entry) -> bool:
+        user = self.find_by_username(username)
+        if not user:
+            return False
+
+        payload = dict(activity_entry or {})
+        payload["timestamp"] = int(payload.get("timestamp") or time.time())
+        user.activity.append(payload)
+        user.activity = user.activity[-200:]
+        self.update_user(user)
+        return True
+
+    def get_activity_feed(self, username, limit=25) -> List[Dict[str, str]]:
+        user = self.find_by_username(username)
+        if not user:
+            return []
+
+        feed_items = []
+        for followed_username in user.following:
+            followed_user = self.find_by_username(followed_username)
+            if not followed_user:
+                continue
+
+            for activity_entry in followed_user.activity:
+                item = dict(activity_entry)
+                item["username"] = followed_user.username
+                item["timestamp"] = int(item.get("timestamp") or 0)
+                feed_items.append(item)
+
+        feed_items.sort(key=lambda item: item.get("timestamp", 0), reverse=True)
+        return feed_items[:limit]
 
 
 class AuthService:

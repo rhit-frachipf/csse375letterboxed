@@ -61,14 +61,31 @@ def addToWatchList(movie):
     user = current_user()
     if not user:
         return False
-    return user_repository.toggle_watchlist_movie(user.username, movie)
+
+    was_in_watchlist = movie in user.whattowatch
+    was_successful = user_repository.toggle_watchlist_movie(user.username, movie)
+    if was_successful:
+        user_repository.add_activity(user.username, {
+            "type": "watchlist_removed" if was_in_watchlist else "watchlist_added",
+            "movie": movie,
+        })
+    return was_successful
 
 
 def addToWatched(movie, rating, review=""):
     user = current_user()
     if not user:
         return False
-    return user_repository.set_movie_rating(user.username, movie, rating, review)
+
+    was_successful = user_repository.set_movie_rating(user.username, movie, rating, review)
+    if was_successful:
+        user_repository.add_activity(user.username, {
+            "type": "rated_movie",
+            "movie": movie,
+            "rating": str(rating),
+            "review": review or "",
+        })
+    return was_successful
 
 @app.route("/")
 def home():
@@ -87,7 +104,8 @@ def get_watchlist():
 
 @app.route('/get-user-profile')
 def get_user_profile():
-    if not current_user():
+    viewer = current_user()
+    if not viewer:
         return flask.jsonify({"found": False}), 401
 
     username = (flask.request.args.get("username") or "").strip()
@@ -102,6 +120,8 @@ def get_user_profile():
     return flask.jsonify({
         "found": True,
         "profile": profile,
+        "isFollowing": user_repository.is_following(viewer.username, user.username),
+        "isSelf": viewer.username == user.username,
     })
 
 
@@ -121,6 +141,50 @@ def get_user_suggestions():
         exclude_username=user.username,
     )
     return flask.jsonify(suggestions)
+
+
+@app.post('/follow-user')
+def follow_user():
+    user = current_user()
+    if not user:
+        return bool_response(False, 401)
+
+    target_username = (flask.request.form.get("username") or "").strip()
+    return bool_response(user_repository.follow_user(user.username, target_username))
+
+
+@app.post('/unfollow-user')
+def unfollow_user():
+    user = current_user()
+    if not user:
+        return bool_response(False, 401)
+
+    target_username = (flask.request.form.get("username") or "").strip()
+    return bool_response(user_repository.unfollow_user(user.username, target_username))
+
+
+@app.route('/get-following')
+def get_following():
+    user = current_user()
+    if not user:
+        return flask.jsonify([]), 401
+    return flask.jsonify(user_repository.list_following(user.username))
+
+
+@app.route('/get-activity-feed')
+def get_activity_feed():
+    user = current_user()
+    if not user:
+        return flask.jsonify([]), 401
+
+    raw_limit = flask.request.args.get("limit")
+    try:
+        limit = int(raw_limit) if raw_limit else 25
+    except ValueError:
+        limit = 25
+    limit = max(1, min(limit, 100))
+
+    return flask.jsonify(user_repository.get_activity_feed(user.username, limit=limit))
 
 @app.post('/add-to-watchlist')
 def add_to_watchlist():

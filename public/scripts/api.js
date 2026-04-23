@@ -68,6 +68,27 @@
         return response.json();
     }
 
+    async function followUser(username, fetchImpl) {
+        return postForm("/follow-user", { username }, fetchImpl);
+    }
+
+    async function unfollowUser(username, fetchImpl) {
+        return postForm("/unfollow-user", { username }, fetchImpl);
+    }
+
+    async function fetchFollowing(fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient("/get-following");
+        return response.json();
+    }
+
+    async function fetchActivityFeed(limit, fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const query = typeof limit === "number" ? `?limit=${encodeURIComponent(limit)}` : "";
+        const response = await fetchClient(`/get-activity-feed${query}`);
+        return response.json();
+    }
+
     function normalizeMovie(payload) {
         return {
             title: payload.Title,
@@ -123,6 +144,10 @@
         fetchWatchlist,
         fetchUserProfile,
         fetchUserSuggestions,
+        followUser,
+        unfollowUser,
+        fetchFollowing,
+        fetchActivityFeed,
         fetchMovieByTitle,
         fetchPosterByTitle,
         searchMovies,

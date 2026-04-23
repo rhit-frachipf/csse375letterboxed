@@ -226,6 +226,7 @@ class HttpServerTests(unittest.TestCase):
         self.assertEqual(payload["profile"]["username"], "alice")
         self.assertIn("Dune", payload["profile"]["watchlist"])
         self.assertIn("Inception", payload["profile"]["watched"])
+        self.assertEqual(payload["isSelf"], True)
 
     def test_get_user_profile_returns_not_found_for_unknown_user(self):
         self.login_as_alice()
@@ -240,6 +241,53 @@ class HttpServerTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.get_json()["found"], False)
+
+    def test_follow_and_unfollow_user_updates_following_list(self):
+        self.fake_db.get(self.users_list_key).append({
+            "username": "bob",
+            "password": "pw",
+            "watched": {},
+            "whattowatch": [],
+        })
+        self.login_as_alice()
+
+        follow_response = self.client.post("/follow-user", data={"username": "bob"})
+        self.assertEqual(follow_response.status_code, 200)
+        self.assertEqual(follow_response.get_json(), True)
+
+        following_response = self.client.get("/get-following")
+        self.assertEqual(following_response.status_code, 200)
+        self.assertIn("bob", following_response.get_json())
+
+        unfollow_response = self.client.post("/unfollow-user", data={"username": "bob"})
+        self.assertEqual(unfollow_response.status_code, 200)
+        self.assertEqual(unfollow_response.get_json(), True)
+
+        following_response = self.client.get("/get-following")
+        self.assertEqual(following_response.status_code, 200)
+        self.assertNotIn("bob", following_response.get_json())
+
+    def test_get_activity_feed_returns_followed_users_recent_activity(self):
+        self.fake_db.get(self.users_list_key).append({
+            "username": "bob",
+            "password": "pw",
+            "watched": {},
+            "whattowatch": [],
+        })
+
+        self.client.post("/API/LOGIN", data={"username": "bob", "password": "pw"})
+        self.client.post("/add-to-watchlist", data={"movie": "Arrival"})
+        self.client.post("/add-to-watched", data={"movie": "Arrival", "rating": "4", "review": "Loved it"})
+
+        self.login_as_alice()
+        self.client.post("/follow-user", data={"username": "bob"})
+
+        feed_response = self.client.get("/get-activity-feed")
+        self.assertEqual(feed_response.status_code, 200)
+        feed = feed_response.get_json()
+        self.assertGreaterEqual(len(feed), 2)
+        self.assertEqual(feed[0]["username"], "bob")
+        self.assertIn(feed[0]["type"], ["rated_movie", "watchlist_added", "watchlist_removed"])
 
     def test_get_user_suggestions_returns_matching_usernames(self):
         self.fake_db.get(self.users_list_key).extend([
