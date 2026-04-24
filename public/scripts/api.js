@@ -156,6 +156,14 @@
         return data.Search.slice(0, 5).map(normalizeMovie);
     }
 
+    async function fetchMovieRatings(movieTitle, fetchImpl) {
+        const fetchClient = fetchImpl || root.fetch;
+        const response = await fetchClient(
+            `/get-movie-ratings?movie=${encodeURIComponent(movieTitle || "")}`
+        );
+        return response.json();
+    }
+
     return {
         postForm,
         login,
@@ -178,6 +186,7 @@
         fetchMovieByTitle,
         fetchPosterByTitle,
         searchMovies,
+        fetchMovieRatings,
         normalizeMovie,
     };
 });

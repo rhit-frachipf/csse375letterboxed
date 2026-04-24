@@ -289,6 +289,42 @@ def add_to_watched():
     post_data = flask.request.form
     return bool_response(addToWatched(post_data.get("movie"), post_data.get("rating"), post_data.get("review", "")))
 
+@app.route('/get-movie-ratings')
+def get_movie_ratings():
+    viewer = current_user()
+    if not viewer:
+        return flask.jsonify([]), 401
+    
+    movie_title = (flask.request.args.get("movie") or "").strip()
+    if not movie_title:
+        return flask.jsonify([]), 400
+    
+    all_users = user_repository._load_users()
+    ratings = []
+    
+    for user in all_users:
+        if user.username == viewer.username:
+            continue
+        
+        watched_value = user.watched.get(movie_title)
+        if not watched_value:
+            continue
+        
+        has_review_object = watched_value and isinstance(watched_value, dict)
+        rating = str(watched_value.get("rating", "")).strip() if has_review_object else str(watched_value or "").strip()
+        review = str(watched_value.get("review", "")).strip() if has_review_object else ""
+        
+        rating_entry = {
+            "username": user.username,
+            "rating": rating,
+        }
+        
+        if review:
+            rating_entry["review"] = review
+        
+        ratings.append(rating_entry)
+    
+    return flask.jsonify(ratings)
 
 @app.post("/API/LOGIN")
 def handle_login():

@@ -434,6 +434,131 @@ class HttpServerTests(unittest.TestCase):
         self.assertNotIn("Inception", bob.watched)
         self.assertEqual(bob.watched["Dune"]["rating"], "3")
 
+    def test_get_movie_ratings_returns_other_users_ratings_for_a_movie(self):
+        # Verify that /get-movie-ratings returns ratings from other users
+        # for a specific movie, excluding the current user's rating
+        self.fake_db.get(self.users_list_key).extend([
+            {
+                "username": "bob",
+                "password": "pw",
+                "watched": {"Inception": {"rating": "4", "review": "Great!"}},
+                "whattowatch": [],
+                "following": [],
+                "activity": [],
+                "privacy": {"showRatings": True, "showReviews": True, "showWatchlist": True, "showActivity": True}
+            },
+            {
+                "username": "charlie",
+                "password": "pw",
+                "watched": {"Inception": {"rating": "3", "review": "OK"}},
+                "whattowatch": [],
+                "following": [],
+                "activity": [],
+                "privacy": {"showRatings": True, "showReviews": True, "showWatchlist": True, "showActivity": True}
+            }
+        ])
+
+        self.login_as_alice()
+        response = self.client.get("/get-movie-ratings", query_string={"movie": "Inception"})
+
+        self.assertEqual(response.status_code, 200)
+        ratings = response.get_json()
+        self.assertEqual(len(ratings), 2)
+        
+        usernames = [r["username"] for r in ratings]
+        self.assertIn("bob", usernames)
+        self.assertIn("charlie", usernames)
+        self.assertNotIn("alice", usernames)  # Should not include self
+        
+        bob_rating = next(r for r in ratings if r["username"] == "bob")
+        self.assertEqual(bob_rating["rating"], "4")
+        self.assertEqual(bob_rating["review"], "Great!")
+
+    def test_get_movie_ratings_requires_login(self):
+        # Verify that /get-movie-ratings requires authentication
+        response = self.client.get("/get-movie-ratings", query_string={"movie": "Inception"})
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json(), [])
+
+    def test_get_movie_ratings_returns_empty_list_for_movie_with_no_ratings(self):
+        # Verify that when no other users have rated a movie, empty list is returned
+        self.fake_db.get(self.users_list_key).append({
+            "username": "bob",
+            "password": "pw",
+            "watched": {},
+            "whattowatch": [],
+            "following": [],
+            "activity": [],
+            "privacy": {"showRatings": True, "showReviews": True, "showWatchlist": True, "showActivity": True}
+        })
+
+        self.login_as_alice()
+        response = self.client.get("/get-movie-ratings", query_string={"movie": "Avatar"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [])
+
+    def test_get_movie_ratings_requires_movie_parameter(self):
+        # Verify that /get-movie-ratings requires the movie parameter
+        self.login_as_alice()
+        response = self.client.get("/get-movie-ratings")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json(), [])
+
+    def test_get_movie_ratings_includes_reviews_when_present(self):
+        # Verify that reviews are included in the response
+        self.fake_db.get(self.users_list_key).append({
+            "username": "bob",
+            "password": "pw",
+            "watched": {"Inception": {"rating": "5", "review": "Amazing movie!"}},
+            "whattowatch": [],
+            "following": [],
+            "activity": [],
+            "privacy": {"showRatings": True, "showReviews": True, "showWatchlist": True, "showActivity": True}
+        })
+
+        self.login_as_alice()
+        response = self.client.get("/get-movie-ratings", query_string={"movie": "Inception"})
+
+        ratings = response.get_json()
+        self.assertGreater(len(ratings), 0)
+        bob_rating = next(r for r in ratings if r["username"] == "bob")
+        self.assertIn("review", bob_rating)
+        self.assertEqual(bob_rating["review"], "Amazing movie!")
+
+    def test_get_movie_ratings_excludes_users_without_rating_for_movie(self):
+        # Verify that users who haven't rated the movie are not included
+        self.fake_db.get(self.users_list_key).extend([
+            {
+                "username": "bob",
+                "password": "pw",
+                "watched": {"Inception": {"rating": "4", "review": "Good"}},
+                "whattowatch": [],
+                "following": [],
+                "activity": [],
+                "privacy": {"showRatings": True, "showReviews": True, "showWatchlist": True, "showActivity": True}
+            },
+            {
+                "username": "charlie",
+                "password": "pw",
+                "watched": {"Matrix": {"rating": "5", "review": "Great"}},
+                "whattowatch": [],
+                "following": [],
+                "activity": [],
+                "privacy": {"showRatings": True, "showReviews": True, "showWatchlist": True, "showActivity": True}
+            }
+        ])
+
+        self.login_as_alice()
+        response = self.client.get("/get-movie-ratings", query_string={"movie": "Inception"})
+
+        ratings = response.get_json()
+        usernames = [r["username"] for r in ratings]
+        self.assertIn("bob", usernames)
+        self.assertNotIn("charlie", usernames)  # Charlie didn't rate Inception
+
 
 if __name__ == "__main__":
     unittest.main()
