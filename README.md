@@ -1,8 +1,24 @@
 # csse375letterboxed
-Course Project For CSSE375 - Letterboxed
+Course project for CSSE375 - Letterboxed.
 
-# Future Features:
-1) When searching, display first available options for what has already been typed in the search bar, and allow those options to be selected
-2) When viewing a movie, you can see other users ratings of the movie
-3) View other users watchlists and rated movies
-4) Allow for written reviews along with the star reviews
+## Implemented Features
+
+- Account signup, login, and logout
+- Movie search with live suggestions and recommendation cards
+- Watchlist and watched movie management with ratings/reviews
+- Find User flow with autocomplete
+- User profiles with follow/unfollow support
+- Friend activity feed
+- Privacy controls for watchlist/ratings/reviews/activity visibility
+- Settings page for username/password updates
+- Light mode and dark mode toggle
+
+## Test Commands
+
+- Backend tests: `python -m unittest -q tests/test_httpserver.py`
+- Frontend tests: `npm test -- --runInBand`
+- Use-case driver harness: `python tests/use_case_driver.py`
+
+## CI
+
+GitHub Actions workflow is defined in `.github/workflows/ci.yml`.

@@ -1,1 +1,7 @@
 node_modules/
+
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
