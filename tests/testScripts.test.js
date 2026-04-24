@@ -90,6 +90,34 @@ describe("api module", () => {
       poster: "http://example.com/inception.jpg"
     });
   });
+
+  test("fetchMovieRatings retrieves other users' ratings for a movie", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([
+        { username: "bob", rating: "4", review: "Great movie!" },
+        { username: "charlie", rating: "3", review: "It was OK" }
+      ])
+    });
+
+    const ratings = await api.fetchMovieRatings("Inception", fetchMock);
+
+    expect(ratings).toHaveLength(2);
+    expect(ratings[0]).toEqual({ username: "bob", rating: "4", review: "Great movie!" });
+    expect(ratings[1]).toEqual({ username: "charlie", rating: "3", review: "It was OK" });
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/get-movie-ratings?movie=${encodeURIComponent("Inception")}`
+    );
+  });
+
+  test("fetchMovieRatings returns empty array when no ratings exist", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue([])
+    });
+
+    const ratings = await api.fetchMovieRatings("Avatar", fetchMock);
+
+    expect(ratings).toEqual([]);
+  });
 });
 
 describe("ui module", () => {
@@ -115,6 +143,50 @@ describe("ui module", () => {
 
     listItem.click();
     expect(onSelect).toHaveBeenCalledWith({ title: "Arrival", rating: "4" });
+  });
+
+  test("renderOtherUserRatings renders ratings from other users", () => {
+    const container = document.createElement("ul");
+    const ratings = [
+      { username: "bob", rating: "4", review: "Great movie!" },
+      { username: "charlie", rating: "3", review: "It was OK" }
+    ];
+
+    ui.renderOtherUserRatings(ratings, container, document);
+
+    const items = container.querySelectorAll("li");
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toContain("bob");
+    expect(items[0].textContent).toContain("4 stars");
+    expect(items[0].textContent).toContain("Great movie!");
+    expect(items[1].textContent).toContain("charlie");
+    expect(items[1].textContent).toContain("3 stars");
+    expect(items[1].textContent).toContain("It was OK");
+  });
+
+  test("renderOtherUserRatings shows empty message when no ratings exist", () => {
+    const container = document.createElement("ul");
+
+    ui.renderOtherUserRatings([], container, document);
+
+    const items = container.querySelectorAll("li");
+    expect(items).toHaveLength(1);
+    expect(items[0].classList.contains("empty-list-item")).toBe(true);
+    expect(items[0].textContent).toBe("No public ratings yet.");
+  });
+
+  test("renderOtherUserRatings does not show review section if review is absent", () => {
+    const container = document.createElement("ul");
+    const ratings = [
+      { username: "bob", rating: "4" }
+    ];
+
+    ui.renderOtherUserRatings(ratings, container, document);
+
+    const items = container.querySelectorAll("li");
+    expect(items[0].textContent).toContain("bob");
+    expect(items[0].textContent).toContain("4 stars");
+    expect(items[0].querySelector(".other-user-review")).toBeNull();
   });
 });
 
@@ -568,10 +640,17 @@ describe("app module", () => {
       <textarea id="written-review"></textarea>
       <button id="saveReview">Save Review</button>
       <p id="review-status"></p>
+      <ul id="otherUserRatings"></ul>
     `);
     global.fetch = jest.fn((url) => {
       if (url === "/get-watched") {
         return Promise.resolve({ json: () => Promise.resolve(watchedPayload) });
+      }
+      if (url.includes("/get-movie-ratings")) {
+        return Promise.resolve({ json: () => Promise.resolve([
+          { username: "bob", rating: "5", review: "Masterpiece" },
+          { username: "charlie", rating: "4", review: "Very good" }
+        ]) });
       }
 
       return Promise.resolve({ json: () => Promise.resolve(true) });
@@ -587,6 +666,13 @@ describe("app module", () => {
     expect(document.querySelectorAll(".image-button")[1].classList.contains("gold")).toBe(true);
     expect(document.querySelectorAll(".image-button")[2].classList.contains("gold")).toBe(false);
 
+    // Verify other users' ratings are loaded
+    await Promise.resolve();
+    const ratingItems = document.querySelectorAll("#otherUserRatings li");
+    expect(ratingItems.length).toBeGreaterThan(0);
+    expect(document.querySelector("#otherUserRatings").textContent).toContain("bob");
+    expect(document.querySelector("#otherUserRatings").textContent).toContain("Masterpiece");
+
     document.querySelector("#addToList").click();
     document.querySelector("#written-review").value = "Great worldbuilding and scope";
     document.querySelectorAll(".image-button")[2].click();
@@ -599,6 +685,52 @@ describe("app module", () => {
     expect(addToWatchedSpy).toHaveBeenCalledWith("Dune", 3, "Great worldbuilding and scope");
     expect(document.querySelector("#review-status").textContent).toBe("Review saved.");
     expect(fakeDocument.location.href).toBe("watchlist.html");
+  });
+
+  test("openMovie loads other users' ratings from the API", async () => {
+    storage.setSelectedMovie({
+      title: "Inception",
+      year: "2010",
+      plot: "Dreams within dreams",
+      genre: "Sci-Fi",
+      poster: "http://example.com/inception.jpg"
+    });
+
+    const fakeDocument = createDocumentStub(`
+      <a class="signout" href="signin.html">Sign Out</a>
+      <h1 id="movie-title"></h1>
+      <p id="movie-genre"></p>
+      <p id="movie-plot"></p>
+      <p id="movie-year"></p>
+      <img id="movie-poster" />
+      <button id="addToList">Add</button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <button class="image-button"></button>
+      <textarea id="written-review"></textarea>
+      <button id="saveReview">Save Review</button>
+      <p id="review-status"></p>
+      <ul id="otherUserRatings"></ul>
+    `);
+
+    const fetchMovieRatingsSpy = jest.spyOn(api, "fetchMovieRatings").mockResolvedValue([
+      { username: "alice", rating: "5", review: "Amazing" },
+      { username: "bob", rating: "4", review: "Good" }
+    ]);
+
+    global.fetch = jest.fn((url) => {
+      if (url === "/get-watched") {
+        return Promise.resolve({ json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve(true) });
+    });
+
+    await app.openMovie(fakeDocument);
+    await Promise.resolve();
+
+    expect(fetchMovieRatingsSpy).toHaveBeenCalledWith("Inception");
   });
 
   // Additional test to cover the case where user tries to save a review without selecting a star rating

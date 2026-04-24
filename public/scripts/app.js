@@ -414,6 +414,13 @@
                 reviewStatus.textContent = wasSuccessful ? "Review saved." : "Could not save review.";
             }
         });
+
+        // Load and display other users' ratings
+        const otherRatingsContainer = doc.querySelector("#otherUserRatings");
+        if (otherRatingsContainer) {
+            const ratings = await api.fetchMovieRatings(movie.title);
+            ui.renderOtherUserRatings(ratings, otherRatingsContainer, doc);
+        }
     }
 
     function buildRecentReviews(watched) {

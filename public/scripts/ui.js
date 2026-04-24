@@ -87,6 +87,41 @@
         });
     }
 
+    function renderOtherUserRatings(ratings, container, documentRef) {
+        const doc = documentRef || root.document;
+        container.innerHTML = "";
+
+        if (!ratings || ratings.length === 0) {
+            const emptyItem = doc.createElement("li");
+            emptyItem.className = "empty-list-item";
+            emptyItem.textContent = "No public ratings yet.";
+            container.appendChild(emptyItem);
+            return;
+        }
+
+        ratings.forEach((ratingData) => {
+            const listItem = doc.createElement("li");
+            listItem.className = "other-user-rating";
+
+            const usernameSpan = doc.createElement("strong");
+            usernameSpan.textContent = ratingData.username;
+            listItem.appendChild(usernameSpan);
+
+            const ratingSpan = doc.createElement("span");
+            ratingSpan.textContent = ` rated: ${ratingData.rating} stars`;
+            listItem.appendChild(ratingSpan);
+
+            if (ratingData.review) {
+                const reviewDiv = doc.createElement("div");
+                reviewDiv.className = "other-user-review";
+                reviewDiv.textContent = `"${ratingData.review}"`;
+                listItem.appendChild(reviewDiv);
+            }
+
+            container.appendChild(listItem);
+        });
+    }
+
     async function renderSearchResults(container, movies, onSelect, documentRef) {
         const doc = documentRef || root.document;
         container.innerHTML = "";
@@ -116,5 +151,6 @@
         updateMovieDetails,
         wireStarRating,
         renderSearchResults,
+        renderOtherUserRatings,
     };
 });
