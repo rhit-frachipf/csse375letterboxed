@@ -522,3 +522,11 @@ body.light-mode {
         radial-gradient(circle at 85% 85%, #dcefe1 0%, transparent 30%),
         linear-gradient(165deg, #eef3f6 0%, #f8fafc 100%);
 }
+
+.signInButtonRow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 7px;
+}
