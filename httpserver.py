@@ -310,19 +310,25 @@ def get_movie_ratings():
         if not watched_value:
             continue
         
+        privacy = user_repository.get_privacy_settings(user.username)
+        show_ratings = privacy.get("showRatings", True)
+        show_reviews = privacy.get("showReviews", True)
+
+        if not show_ratings and not show_reviews:
+            continue
+
         has_review_object = watched_value and isinstance(watched_value, dict)
         rating = str(watched_value.get("rating", "")).strip() if has_review_object else str(watched_value or "").strip()
         review = str(watched_value.get("review", "")).strip() if has_review_object else ""
-        
-        rating_entry = {
-            "username": user.username,
-            "rating": rating,
-        }
-        
-        if review:
+
+        rating_entry = {"username": user.username}
+
+        if show_ratings:
+            rating_entry["rating"] = rating
+        if show_reviews and review:
             rating_entry["review"] = review
-        
-        ratings.append(rating_entry)
+            
+            ratings.append(rating_entry)
     
     return flask.jsonify(ratings)
 
