@@ -44,6 +44,7 @@
     root.openfinduser = app.openFindUser;
     root.openuserprofile = app.openUserProfile;
     root.opensettings = app.openSettings;
+    root.openfriends = app.openFriends;
     root.applyThemeToDocument = applyThemeToDocument;
     return app;
 });

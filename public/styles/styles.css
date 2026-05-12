@@ -70,6 +70,9 @@ body > * {
     border-radius: 999px;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
+.nav-bar > .signout {
+    margin-left: auto;
+}
 
 .nav-bar > a:hover {
     background-color: #243038;
@@ -77,7 +80,6 @@ body > * {
 }
 
 .settings-nav {
-    margin-left: auto;
     font-size: 18px;
     width: 34px;
     height: 34px;
@@ -125,6 +127,24 @@ h2 {
     align-items: center;
     gap: 10px;
     padding: 7px;
+}
+
+.password-field-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 420px;
+}
+
+.password-field-row input {
+    max-width: none;
+}
+
+.secondary-button {
+    min-width: 84px;
+    background: #3c4a52;
+    color: #f1f6f8;
 }
 
 label {
@@ -221,6 +241,14 @@ ul#moviesList li:hover {
     margin: 0;
     color: var(--muted);
     font-size: 14px;
+}
+.helper-link-row {
+    margin: 0;
+    font-size: 14px;
+}
+.helper-link-row a {
+    color: var(--focus);
+    text-decoration: underline;
 }
 
 #findUserStatus,
@@ -440,6 +468,12 @@ ul#moviesList li:hover {
     color: var(--muted);
     margin-top: 8px;
 }
+.rating-hint,
+.review-shortcut-hint {
+    margin: 6px 0;
+    color: var(--muted);
+    font-size: 14px;
+}
 
 .other-ratings-section {
     margin-top: 20px;
@@ -521,6 +555,41 @@ body.light-mode {
     background: radial-gradient(circle at 15% 10%, #d8e5ec 0%, transparent 35%),
         radial-gradient(circle at 85% 85%, #dcefe1 0%, transparent 30%),
         linear-gradient(165deg, #eef3f6 0%, #f8fafc 100%);
+}
+body.light-mode .top-bar,
+body.light-mode .nav-bar {
+    background: #f7fbfded;
+}
+body.light-mode .nav-bar > a:hover {
+    background-color: #dae8ef;
+    color: #0d1d25;
+}
+body.light-mode .panel,
+body.light-mode .search-result-card,
+body.light-mode .movie-text-details,
+body.light-mode .other-user-rating,
+body.light-mode .user-suggestion-item,
+body.light-mode .user-profile-list li,
+body.light-mode .activity-feed-list li,
+body.light-mode ul#moviesWatchList li,
+body.light-mode ul#moviesList li {
+    background-color: #f7fbfd;
+    border-color: #bfd0d8;
+}
+body.light-mode .secondary-button {
+    background: #dde7ec;
+    color: #1b2b34;
+}
+body.light-mode #movie-plot,
+body.light-mode .other-user-review {
+    color: #263740;
+}
+body.light-mode .search-result-card:hover,
+body.light-mode ul#moviesWatchList li:hover,
+body.light-mode ul#moviesList li:hover,
+body.light-mode .user-suggestion-item:hover {
+    background-color: #edf4f8;
+    border-color: #9fb8c5;
 }
 
 .signInButtonRow {

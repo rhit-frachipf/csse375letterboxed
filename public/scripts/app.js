@@ -194,14 +194,31 @@
 
         signoutLink.addEventListener("click", async (event) => {
             event.preventDefault();
+            const shouldSignOut = root.confirm ? root.confirm("Are you sure you want to sign out?") : true;
+            if (!shouldSignOut) {
+                return;
+            }
             await api.logout();
             storage.clearAppState();
             navigate("signin.html", doc);
         });
     }
 
+    function wirePasswordToggle(toggleButton, passwordInput) {
+        if (!toggleButton || !passwordInput) {
+            return;
+        }
+
+        toggleButton.addEventListener("click", () => {
+            const isHidden = passwordInput.type === "password";
+            passwordInput.type = isHidden ? "text" : "password";
+            toggleButton.textContent = isHidden ? "Hide" : "Show";
+        });
+    }
+
     function openSignin(documentRef) {
         const doc = documentRef || root.document;
+        wirePasswordToggle(doc.querySelector("#togglePassword"), doc.querySelector("#password"));
         const signinButton = doc.querySelector("#signin");
         signinButton.addEventListener("click", async () => {
             const username = doc.querySelector("#username").value;
@@ -212,6 +229,7 @@
 
     function openSignup(documentRef) {
         const doc = documentRef || root.document;
+        wirePasswordToggle(doc.querySelector("#toggleNewPassword"), doc.querySelector("#newPassword"));
         const createAccountButton = doc.querySelector("#createAccount");
         createAccountButton.addEventListener("click", async () => {
             const username = doc.querySelector("#newUsername").value;
@@ -364,14 +382,24 @@
             return;
         }
         let selectedRating = null;
+        let isInWatchlist = false;
 
         ui.updateMovieDetails(movie, doc);
 
-        const watchedMovies = await api.fetchWatched();
+        const [watchedMovies, watchlist] = await Promise.all([
+            api.fetchWatched(),
+            api.fetchWatchlist(),
+        ]);
         const watchedValue = watchedMovies[movie.title];
         const hasReviewObject = watchedValue && typeof watchedValue === "object";
         const initialRating = hasReviewObject ? Number(watchedValue.rating) : Number(watchedValue);
         const initialReview = hasReviewObject ? watchedValue.review || "" : "";
+        isInWatchlist = Array.isArray(watchlist) && watchlist.includes(movie.title);
+
+        const watchlistButton = doc.querySelector("#addToList");
+        if (watchlistButton) {
+            watchlistButton.textContent = isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist";
+        }
 
         if (!Number.isNaN(initialRating) && initialRating > 0) {
             selectedRating = initialRating;
@@ -384,13 +412,34 @@
 
         doc.querySelector("#addToList").addEventListener("click", async () => {
             const wasSuccessful = await api.addToWatchlist(movie.title);
-            if (wasSuccessful) {
-                navigate("watchlist.html", doc);
+            const reviewStatus = doc.querySelector("#review-status");
+
+            if (!wasSuccessful) {
+                if (reviewStatus) {
+                    reviewStatus.textContent = "Could not update watchlist.";
+                }
+                return;
+            }
+
+            isInWatchlist = !isInWatchlist;
+            const watchlistButtonElement = doc.querySelector("#addToList");
+            if (watchlistButtonElement) {
+                watchlistButtonElement.textContent = isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist";
+            }
+
+            if (reviewStatus) {
+                reviewStatus.textContent = isInWatchlist
+                    ? "Added to your watchlist."
+                    : "Removed from your watchlist.";
             }
         });
 
         ui.wireStarRating(doc.querySelectorAll(".image-button"), async (rating) => {
             selectedRating = rating;
+            const reviewStatus = doc.querySelector("#review-status");
+            if (reviewStatus) {
+                reviewStatus.textContent = `Selected ${rating} star${rating === 1 ? "" : "s"}. Click Save Rating & Review to save.`;
+            }
         }, selectedRating);
 
         const saveReviewButton = doc.querySelector("#saveReview");
@@ -414,6 +463,15 @@
                 reviewStatus.textContent = wasSuccessful ? "Review saved." : "Could not save review.";
             }
         });
+
+        if (reviewTextElement) {
+            reviewTextElement.addEventListener("keydown", (event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                    event.preventDefault();
+                    saveReviewButton.click();
+                }
+            });
+        }
 
         // Load and display other users' ratings
         const otherRatingsContainer = doc.querySelector("#otherUserRatings");
@@ -687,6 +745,10 @@
         const themeToggle = doc.querySelector("#themeToggle");
         const themeStatus = doc.querySelector("#themeStatus");
 
+        wirePasswordToggle(doc.querySelector("#toggleCurrentPasswordForUsername"), currentPasswordForUsername);
+        wirePasswordToggle(doc.querySelector("#toggleCurrentPassword"), currentPassword);
+        wirePasswordToggle(doc.querySelector("#toggleNewPassword"), newPassword);
+
         if (usernameInput && settingsResponse.username) {
             usernameInput.value = settingsResponse.username;
         }
@@ -769,6 +831,47 @@
         }
     }
 
+    async function openFriends(documentRef) {
+        const doc = documentRef || root.document;
+        bindSignOut(doc);
+
+        const [following, activityFeed] = await Promise.all([
+            api.fetchFollowing(),
+            api.fetchActivityFeed(50),
+        ]);
+
+        const followingItems = Array.isArray(following) ? following : [];
+
+        const feedItems = (Array.isArray(activityFeed) ? activityFeed : []).map((item) => {
+            const username = item.username || "Someone";
+            if (item.type === "rated_movie") {
+                const reviewSuffix = item.review ? ` - \"${item.review}\"` : "";
+                return `${username} rated ${item.movie} ${item.rating} stars${reviewSuffix}`;
+            }
+            if (item.type === "watchlist_added") {
+                return `${username} added ${item.movie} to their watchlist`;
+            }
+            if (item.type === "watchlist_removed") {
+                return `${username} removed ${item.movie} from their watchlist`;
+            }
+            return `${username} updated ${item.movie}`;
+        });
+
+        renderSimpleList(
+            doc.querySelector("#followingList"),
+            followingItems,
+            "You are not following anyone yet. Visit Find a User to follow people.",
+            doc
+        );
+
+        renderSimpleList(
+            doc.querySelector("#friendsActivityFeed"),
+            feedItems,
+            "No friend activity yet.",
+            doc
+        );
+    }
+
     return {
         bindSignOut,
         handleAuthAction,
@@ -782,6 +885,7 @@
         openFindUser,
         openUserProfile,
         openSettings,
+        openFriends,
         requireSelectedMovie,
         selectMovieAndOpen,
     };

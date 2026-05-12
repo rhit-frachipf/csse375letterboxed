@@ -24,6 +24,7 @@
     <a class="watchlist" href="watchlist.html">Watchlist</a>
     <a class="search" href="search.html">Search</a>
     <a class="finduser" href="finduser.html">Find a User</a>
+    <a class="friends" href="friends.html">Friends</a>
     <a class="signout" href="signin.html">Sign Out</a>
     <a class="settings-nav" href="settings.html" aria-label="Settings">&#9881;</a>
   </nav>
@@ -41,7 +42,7 @@
         </div>
       </div>
 
-      <button id = "addToList">Toggle on Watchlist</button>
+      <button id = "addToList">Add to Watchlist</button>
 
       <div class = "star-container">
         <button class = "image-button" id = "1-star"></button>
@@ -50,11 +51,13 @@
         <button class = "image-button" id = "4-star"></button>
         <button class = "image-button" id = "5-star"></button>
       </div>
+      <p class="rating-hint">Your rating is not saved until you click Save Rating &amp; Review.</p>
 
       <div>
-        <label for="written-review">Written review</label>
+        <label for="written-review">Written review (optional)</label>
         <textarea id="written-review" rows="4" cols="50" placeholder="Share your thoughts about this movie"></textarea>
-        <button id="saveReview">Save Review</button>
+        <button id="saveReview">Save Rating &amp; Review</button>
+        <p class="review-shortcut-hint">Tip: Press Ctrl+Enter to save.</p>
         <p id="review-status"></p>
       </div>
 

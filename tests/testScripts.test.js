@@ -684,7 +684,8 @@ describe("app module", () => {
     expect(addToWatchlistSpy).toHaveBeenCalledWith("Dune");
     expect(addToWatchedSpy).toHaveBeenCalledWith("Dune", 3, "Great worldbuilding and scope");
     expect(document.querySelector("#review-status").textContent).toBe("Review saved.");
-    expect(fakeDocument.location.href).toBe("watchlist.html");
+    expect(fakeDocument.location.href).toBe("signin.html");
+    expect(document.querySelector("#addToList").textContent).toBe("Remove from Watchlist");
   });
 
   test("openMovie loads other users' ratings from the API", async () => {

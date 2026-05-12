@@ -23,6 +23,7 @@
     <a class="watchlist" href="watchlist.html">Watchlist</a>
     <a class="search" href="search.html">Search</a>
     <a class="finduser" href="finduser.html">Find a User</a>
+    <a class="friends" href="friends.html">Friends</a>
     <a class="signout" href="signin.html">Sign Out</a>
     <a class="settings-nav" href="settings.html" aria-label="Settings">&#9881;</a>
   </nav>
@@ -39,16 +40,25 @@
       <label for="newUsername">New Username</label>
       <input id="newUsername" type="text" placeholder="Enter new username">
       <label for="currentPasswordForUsername">Current Password</label>
-      <input id="currentPasswordForUsername" type="password" placeholder="Enter current password">
+      <div class="password-field-row">
+        <input id="currentPasswordForUsername" type="password" placeholder="Enter current password">
+        <button id="toggleCurrentPasswordForUsername" type="button" class="secondary-button">Show</button>
+      </div>
       <div class="signUpButtonsDiv">
         <button id="updateUsernameButton">Update Username</button>
       </div>
       <p id="usernameStatus"></p>
 
       <label for="currentPassword">Current Password</label>
-      <input id="currentPassword" type="password" placeholder="Enter current password">
+      <div class="password-field-row">
+        <input id="currentPassword" type="password" placeholder="Enter current password">
+        <button id="toggleCurrentPassword" type="button" class="secondary-button">Show</button>
+      </div>
       <label for="newPassword">New Password</label>
-      <input id="newPassword" type="password" placeholder="Enter new password">
+      <div class="password-field-row">
+        <input id="newPassword" type="password" placeholder="Enter new password">
+        <button id="toggleNewPassword" type="button" class="secondary-button">Show</button>
+      </div>
       <div class="signUpButtonsDiv">
         <button id="updatePasswordButton">Update Password</button>
       </div>

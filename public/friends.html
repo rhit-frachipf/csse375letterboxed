@@ -9,10 +9,10 @@
   <script type="text/javascript" src="scripts/app.js"></script>
   <script type="text/javascript" src="scripts/scripts.js"></script>
   <link rel="stylesheet" href="styles/styles.css">
-  <title>User Profile</title>
+  <title>Friends</title>
 </head>
 
-<body onload="openuserprofile()">
+<body onload="openfriends()">
   <div class="top-bar">
     <img src="logo.png" width="300" height="55">
   </div>
@@ -29,22 +29,14 @@
   </nav>
 
   <main class="page-shell">
-    <section class="panel user-profile-panel">
-      <h2 id="profileUsername">User Profile</h2>
-      <p id="profileStatus"></p>
-      <div class="profile-follow-controls">
-        <button id="followUserButton">Follow</button>
-        <p id="followUserStatus"></p>
-      </div>
+    <section class="panel">
+      <h2>Following</h2>
+      <ul id="followingList" class="user-profile-list"></ul>
+    </section>
 
-      <h3>Watchlist</h3>
-      <ul id="profileWatchlist" class="user-profile-list"></ul>
-
-      <h3>Watched Movies</h3>
-      <ul id="profileWatched" class="user-profile-list"></ul>
-
-      <h3>Recent Reviews</h3>
-      <ul id="profileRecentReviews" class="user-profile-list"></ul>
+    <section class="panel feed-panel">
+      <h2>Friend Activity</h2>
+      <ul id="friendsActivityFeed" class="activity-feed-list"></ul>
     </section>
   </main>
 </body>
