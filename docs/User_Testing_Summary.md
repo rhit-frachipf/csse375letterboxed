@@ -32,3 +32,20 @@
 - Feedback:
 	- Move Sign Out button to the right side of the nav bar.
 	- Add sign-out confirmation.
+
+## Test 4
+- User: Remi Schwartz
+- Feedback:
+   - Move sign in and sign up button close together
+
+## Test 5
+- User: Ellie Jin
+- Feedback:
+   - Adding remove buttons in the watchlist screen would make it easier to remove movies.
+
+## Test 6
+- User: Jay Smith
+- Notes
+   - Search is confusing
+- Feedback:
+   - Add an info tab to settings
