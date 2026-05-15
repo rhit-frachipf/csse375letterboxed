@@ -1,0 +1,119 @@
+Milestone 2
+Letterboxed
+Peter Frachioni
+Veer Malik
+CSSE373 - Milestone 2
+4/2/2026
+
+Objective 1
+For this milestone, we planned Milestones 2, 3, and 4 around finishing the main user-facing features first, leaving documentation, cleanup, and delivery work for the end.
+Milestone 2 completed features:
+Written reviews alongside star ratings
+Search suggestions that update as the user types
+Remaining planned features:
+Viewing other users’ ratings for a movie
+Viewing other users’ watchlists and rated movies
+Next steps:
+Milestone 3: Focus on remaining user-facing features
+Milestone 4: Final testing, documentation, polishing, and delivery
+Feature details:
+Search feature:
+Displays matching movie results while typing
+Allows users to click directly to a movie page
+Written review feature:
+Users can:
+Select a star rating
+Enter and save a written review
+Return later to update it
+Reviews also appear on the My Movies page
+These features required updates across:
+Search page HTML
+Frontend logic and API helpers
+UI rendering helpers
+Backend request handling for reviews
+Watched-movie data structure
+Refactoring work:
+Moved user/login state from Flask app → session-based handling
+Created user_store.py with:
+UserRepository
+AuthService
+Split large scripts.js into smaller modules
+Extracted shared helper functions
+Cleaned up movie/user data structures
+Rewrote tests to match refactored code
+Configuration & CI:
+GitHub used as controlled delivery repository
+main branch serves as delivery branch
+Milestones integrated through standard source control workflows and automated testing
+Objective 2
+We expanded the automated test suite alongside refactoring and feature development.
+Backend (Python tests):
+Updated for:
+Session-based logic
+New watched-movie format (rating + review)
+Tests currently pass for:
+Login / signup
+Watchlist updates
+Watched-movie updates
+Retrieving watched movies
+Logout
+Frontend (JavaScript tests):
+Rewritten to test real modules (not mock logic)
+Coverage includes:
+Storage behavior
+API helpers
+UI rendering helpers
+Movie page behavior (loading/saving reviews)
+Search suggestions:
+Limited results
+Rendering behavior
+Menu clearing
+Selection handling
+Testing strategy (Lisa Crispin’s quadrants):
+Q1: Strong unit test coverage
+Q2: Integration-style tests (routes + workflows)
+Q3/Q4: Manual system and exploratory testing
+Objective 3
+AI was used throughout this milestone for:
+Identifying code smells
+Planning refactorings
+Implementing refactorings
+Assisting with:
+Written review feature
+Search suggestion feature
+Process:
+AI proposed issues and refactoring plans
+We manually reviewed and validated them
+After AI-generated changes:
+Code was reviewed
+Logic was verified
+Application behavior was tested
+All prompts and work are recorded in the AI journal.
+Objective 4
+The primary code smells addressed were structural:
+Backend issues:
+Temporary Field / Inappropriate Intimacy / Primitive Obsession
+(global user/login state on Flask app)
+Feature Envy
+(routes manipulating nested data directly)
+Frontend issues:
+Large Class / Divergent Change (scripts.js)
+Duplicated Code (fetch + rendering logic)
+Data Clumps / Primitive Obsession (movie data representation)
+Solutions implemented:
+Moved to session-based state handling
+Introduced repository + service abstractions
+Split frontend into smaller modules
+Extracted shared helpers
+Updated tests to match new structure
+We are continuing to document:
+Development process
+AI usage
+Testing progress
+Milestone updates
+The completed work (search suggestions, written reviews, and refactoring) provides a solid foundation for implementing the remaining multi-user features in the next milestone.
+
+https://github.com/rhit-frachipf/csse375letterboxed/wiki/AI-Usage-Journal
+
+
+

@@ -1,0 +1,61 @@
+Milestone 3
+Letterboxed
+Peter Frachioni
+Veer Malik
+CSSE373 - Milestone 3
+4/23/2026
+1. Objective 1 - Final Functionality and Refactoring
+During this milestone, we focused on completing the remaining core functionality while improving the structure and testability of our codebase. Much of our effort went into integrating previously planned features and ensuring they worked cohesively across both the frontend and backend.
+We implemented several user-facing features. The search page now provides recommendations before the user begins typing, using watchlist and viewing history when available, with a fallback to popular content. We also added a “Find User” page that includes autocomplete suggestions to improve usability. User profiles were expanded to show watchlists, watched movies, and recent reviews, allowing for more meaningful interaction between users.
+A major addition was the social system, which includes the ability to follow and unfollow users, along with an activity feed that displays actions such as ratings, reviews, and watchlist updates. To support this, we implemented privacy controls so users can decide what information is visible to others. These controls are accessible through a new settings page, which also allows users to update their username, password, and toggle between light and dark modes.
+We also expanded the sample database to create more realistic testing scenarios and added functionality so users can view ratings from others directly on movie pages.
+Alongside feature development, we improved our testing strategy. We expanded both backend and frontend test coverage and introduced a use-case driver to simulate realistic user scenarios. Key testing components include:
+Backend API and regression tests (test_httpserver.py)
+Frontend and GUI-mock tests (testScripts.test.js)
+A repeatable use-case driver (use_case_driver.py)
+To support safer development and easier testing, we applied refactoring techniques inspired by Feathers, particularly the use of seams. These allowed us to isolate parts of the system and test them independently. Examples include injecting dependencies such as fetch implementations and document references, replacing the database with a fake version for testing, and introducing controlled entry points for executing use cases.
+We also made several structural improvements to the codebase:
+Updated the user data model to support following, activity tracking, and privacy settings
+Centralized privacy enforcement on the server side
+Improved theme persistence across sessions
+Added a CI pipeline to automate testing
+Cleaned up duplicate logic and improved activity feed behavior
+Throughout this process, we addressed several common refactoring challenges described in Feathers. In particular, we relied on characterization tests to understand existing behavior before making changes, used seams to break dependencies, and ensured backward compatibility while evolving the system.
+At this stage, the project is ready for demonstration. All core features are implemented, tests are in place, and we have a use-case driver that allows us to reliably showcase key functionality.
+2. Objective 2 - Tests in Crispin’s Four Quadrants
+Our testing approach spans all four of Crispin’s testing quadrants, giving us confidence at multiple levels of the system.
+At the unit level (Q1), we tested individual components such as API helpers, storage logic, and UI rendering utilities. These tests ensure that small pieces of the system behave correctly in isolation.
+For integration testing (Q2), we focused on backend endpoints and how different parts of the system interact. This includes testing full request/response cycles, session handling, and interactions with the data layer.
+We also implemented acceptance-style tests (Q3) using our use-case driver and frontend simulations. These tests model real user behavior, such as discovering another user, following them, and viewing activity in the feed.
+Finally, we included non-functional and exploratory testing (Q4). This includes running tests through our CI pipeline for regression detection, manually verifying UI flows (navigation, settings, profiles), and ensuring that privacy rules are correctly enforced.
+3. Objective 3 - AI Skill Growth
+AI played a significant role in this milestone, particularly in accelerating development and improving test coverage. We used AI to assist with a range of tasks, including:
+Designing and implementing features across multiple layers (frontend, backend, tests)
+Generating and refining GUI-mock tests using document stubs and Jest
+Structuring code to improve testability through seams
+Creating test scaffolding and use-case drivers
+Identifying refactoring opportunities and checking compatibility
+One particularly useful application was the creation of a GUI mock testing setup. By simulating the DOM in Jest, we were able to test user interactions without relying on a full browser environment. This made it easier to validate frontend logic in isolation.
+In evaluating AI’s effectiveness, we found that it significantly sped up implementation and helped maintain consistency across the system. However, it was not sufficient on its own. We still needed to review outputs carefully, especially to ensure alignment with assignment requirements and correct test classification within Crispin’s quadrants.
+Overall, AI was most effective when used as a tool to augment development rather than replace decision-making.
+4. Objective 4 - Contributions and Lessons Learned
+4.1 Contributions
+Over the course of the milestone, our work progressed in a fairly structured sequence. Key contributions included:
+Implementing search recommendations with appropriate fallbacks
+Building user discovery and profile features
+Adding autocomplete functionality
+Expanding the sample dataset for better testing and demos
+Developing the friend/follow system and activity feed
+Implementing privacy settings and account management features
+Adding theme support and a settings interface
+Setting up CI and building a use-case driver
+Refining documentation and aligning tests with requirements
+4.2 Lessons Learned
+Several important lessons emerged from this milestone:
+Introducing seams is one of the most effective ways to make a system testable and maintainable
+Maintaining backward compatibility is critical when evolving data models
+A combination of testing strategies (unit, integration, scenario-based) provides stronger confidence than relying on a single approach
+Privacy controls should be enforced at the backend level, not just hidden in the UI
+AI is a powerful tool, but it requires clear direction and careful validation to be effective
+We also found that documenting our AI usage more consistently would have been beneficial. While we captured key interactions, a more detailed journal throughout development would provide better insight into how decisions were made and how problems were solved.
+

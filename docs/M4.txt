@@ -1,0 +1,375 @@
+Milestone 4
+Letterboxed
+Peter Frachioni
+Veer Malik
+CSSE373 - Milestone 4
+5/14/2026
+
+1. Objective 1
+
+Cover Page
+This document contains the final Objective 1 deliverables for the Letterboxed system.
+
+Table of Contents
+Introduction
+User Guide/Manual/Tutorial
+Installation/Configuration/Deployment Guide
+Development/Maintenance Guide
+Software Requirements Specification (SRS)
+Software Architecture and Design Specification (SADS)
+Test Plan/Strategy/Suite Summary
+Ethics and Error Handling
+User Testing Summary
+Demo and Delivery Checklist
+
+
+III. Introduction
+Letterboxed is a web-based movie tracking system with accounts, watchlists, watched ratings/reviews, user profiles, social follow activity, and privacy settings. The client is the course instructor, and the system is delivered as a Python Flask backend with static HTML/CSS/JavaScript frontend and automated tests.
+
+This Milestone 4 submission focuses only on Objective 1 finalization and packaging for delivery.
+
+
+IV. User Guide/Manual/Tutorial
+See: docs/User_Guide.md:
+
+# User Guide
+
+## 1. Getting Started
+1. Open the app and create an account on the signup page.
+2. Log in using your account credentials.
+3. Use navigation buttons to open Search, My Movies, Watchlist, Find User, and Settings.
+
+## 2. Core Workflows
+- Search movies from the Search page.
+- Open a movie page to view details and add it to your watchlist.
+- Save a rating/review for watched movies.
+- Open My Movies to view rated/reviewed movies.
+- Use Find User to look up profiles and follow/unfollow.
+- Open Friends page to view activity feed from followed users.
+- Use Settings to update username/password and privacy toggles.
+
+## 3. Privacy Behavior
+If another user disables a visibility option, their hidden content will not appear on profile or activity views.
+
+## 4. Known Limits
+- Ratings/reviews visibility depends on user privacy settings.
+- Some operations require login and will fail when session is missing.
+
+
+V. Installation/Configuration/Deployment Guide
+See: docs/Installation_Configuration_Deployment_Guide.md:
+
+# Installation, Configuration, and Deployment Guide
+
+## 1. Prerequisites
+- Python 3.11+
+- Node.js 20+ and npm (for frontend tests)
+
+## 2. Setup
+1. Clone the repository.
+2. Install Python dependencies:
+   - `pip install flask pickledb`
+3. Install JavaScript dependencies:
+   - `npm ci`
+
+## 3. Run the System
+- Start server:
+  - `python httpserver.py`
+- Open browser to:
+  - `http://localhost:5000`
+
+## 4. Configuration
+- Environment variable for Flask secret:
+  - `LETTERBOXED_SECRET` (optional; defaults to development value)
+- Data file:
+  - `users.db` in project root.
+
+## 5. Run Tests
+- Backend:
+  - `python -m unittest -q tests/test_httpserver.py`
+- Frontend:
+  - `npm test -- --runInBand`
+
+## 6. CI
+GitHub Actions workflow in `.github/workflows/ci.yml` runs backend and frontend tests on push and pull requests.
+
+
+VI. Development/Maintenance Guide
+See: docs/Development_Maintenance_Guide.md:
+
+# Development and Maintenance Guide
+
+## 1. Repository Structure
+- Backend entrypoint: `httpserver.py`
+- Domain/data layer: `user_store.py`
+- Frontend pages: `public/*.html`
+- Frontend scripts: `public/scripts/*.js`
+- Tests: `tests/`
+
+## 2. Refactoring Summary (Milestones 2-4)
+- Moved authentication state from Flask global fields to session-based handling.
+- Introduced `UserRepository` and `AuthService` for cleaner separation.
+- Split frontend logic into smaller modules (`api`, `ui`, `storage`, app flow).
+- Added characterization and regression tests to preserve behavior through change.
+
+## 3. Maintenance Tasks
+- Add endpoint tests for new backend features.
+- Add UI and API module tests for new frontend behavior.
+- Keep CI green before merge.
+- Update SRS/SADS when requirements or architecture change.
+
+## 4. Coding and Test Practices
+- Prefer small functions and reusable helpers.
+- Keep route handlers thin; place business logic in repository/service layer.
+- Use fake DB/document stubs in tests when isolating behavior.
+
+
+VII. Software Requirements Specification (SRS)
+See: docs/SRS.md:
+
+# Software Requirements Specification (SRS)
+
+## 1. Scope
+Letterboxed is a web application for tracking movies, writing ratings/reviews, managing watchlists, and interacting with other users through profiles and follow activity.
+
+## 2. Delivered Functional Requirements
+- FR1: User signup, login, and logout.
+- FR2: Search movies and show suggestions while typing.
+- FR3: Add/remove movies in watchlist.
+- FR4: Mark movies watched with rating and optional written review.
+- FR5: View personal watchlist and watched list.
+- FR6: Find users and view user profiles.
+- FR7: Follow/unfollow users.
+- FR8: View activity feed from followed users.
+- FR9: Set privacy controls (watchlist, ratings, reviews, activity visibility).
+- FR10: Update username/password in settings.
+- FR11: Toggle theme preference.
+
+## 3. Non-Functional Requirements
+- NFR1: System behavior verified by automated backend and frontend tests.
+- NFR2: CI executes test suites on push/pull request.
+- NFR3: Session-based authentication required for protected operations.
+- NFR4: Basic error handling for unauthenticated/invalid requests.
+
+## 4. Deferred / Not Fully Delivered
+- DR1: Production-grade password hashing and stronger security hardening.
+- DR2: Migration from file-based storage to a transactional database.
+- DR3: Horizontal scalability hardening beyond course scope.
+
+## 5. Acceptance Summary
+The delivered build satisfies the core user functionality planned in Milestones 2-4 and supports demonstration use by multiple users through session-based web workflows.
+
+VIII. Software Architecture and Design Specification (SADS)
+See: docs/SADS.md:
+
+# Software Architecture and Design Specification (SADS)
+
+## 1. Architecture Overview
+The system uses a simple 3-layer web architecture:
+- Presentation Layer: Static HTML/CSS/JavaScript pages under `public/`.
+- Application Layer: Flask routes in `httpserver.py`.
+- Data Layer: Repository/service logic in `user_store.py` with PickleDB-backed persistence.
+
+## 2. Main Components
+- `httpserver.py`: Route handlers, session checks, request parsing, JSON responses.
+- `user_store.py`: `User`, `UserRepository`, `AuthService` domain/data logic.
+- `public/scripts/api.js`: Client API adapter for backend and OMDb calls.
+- `public/scripts/ui.js`, `app.js`, `storage.js`, `scripts.js`: UI behavior and page workflows.
+
+## 3. Data Model Summary
+- User fields: username, password, watched, whattowatch, following, activity, privacy.
+- Watched entry: rating + review structure.
+- Privacy model: showWatchlist, showRatings, showReviews, showActivity flags.
+
+## 4. Key Design Decisions
+- Session-based authentication replaced global in-memory user state.
+- Repository/service split improved testability and modularity.
+- Frontend code split into smaller modules reduced duplication and improved maintainability.
+- Characterization and regression tests used to preserve behavior during refactoring.
+
+## 5. Design Constraints
+- Course project scope prioritizes delivery of functional behavior over enterprise-scale infrastructure.
+- PickleDB selected for simplicity; production database migration is a future improvement.
+
+IX. Test Plan/Strategy/Suite Summary
+See: docs/Test_Plan_Strategy_Summary.md:
+
+# Test Plan, Strategy, and Suite Summary
+
+## 1. Test Scope
+- Integration and API behavior for backend endpoints.
+- Frontend module behavior (storage, API adapters, UI rendering, app flow).
+- Acceptance-style user flow checks through use case scenarios.
+
+## 2. Test Suites
+- Backend: `tests/test_httpserver.py`
+- Frontend: `tests/testScripts.test.js`
+- Use-case driver: `tests/use_case_driver.py`
+
+## 3. Automation Strategy
+- GitHub Actions CI runs backend and frontend suites on push/pull request.
+- Workflow file: `.github/workflows/ci.yml`
+
+## 4. Latest Recorded Results
+- Local backend execution (5/14/2026): PASS
+  - Command: `python -m unittest -q tests/test_httpserver.py`
+  - Result: Ran 32 tests, OK.
+- Local frontend execution (5/14/2026): NOT EXECUTED IN THIS ENVIRONMENT
+  - Command attempted: `npm test -- --runInBand`
+  - Result: npm unavailable in current terminal environment.
+
+## 5. Acceptance Coverage Summary
+- Account creation/login/logout
+- Watchlist and watched ratings/reviews
+- Find user and user profile visibility
+- Follow/unfollow and activity feed
+- Privacy and settings updates
+
+X. Ethics and Error Handling
+See: docs/Ethics_and_Error_Handling.md:
+
+# Ethics and Error Handling (Objective 1)
+
+## 1. Ethics Review
+
+### IEEE Standard Alignment (3 items)
+- Protect public welfare and user trust:
+  - Privacy controls were implemented so users can control visibility of watchlist, ratings, reviews, and activity.
+- Be honest and realistic about claims and limitations:
+  - Deferred items are documented (security hardening and database scalability upgrades).
+- Improve technical competence and quality:
+  - The team used automated tests and CI to validate behavior before delivery.
+
+### AI Use Concern and Handling
+Concern: AI-generated code can introduce incorrect logic or hidden defects if accepted blindly.
+Handling: AI output was reviewed, refactored, and validated with backend/frontend tests before acceptance.
+
+## 2. Error Handling
+
+### Scope
+- Unauthenticated access (401 responses)
+- Missing or invalid request inputs (400 responses)
+- Not-found resources (404 responses)
+- Controlled boolean response fallback for mutation endpoints
+
+### Example Snippet (from `httpserver.py`)
+```python
+@app.route('/get-user-profile')
+def get_user_profile():
+    viewer = current_user()
+    if not viewer:
+        return flask.jsonify({"found": False}), 401
+
+    username = (flask.request.args.get("username") or "").strip()
+    if not username:
+        return flask.jsonify({"found": False}), 400
+
+    user = user_repository.find_by_username(username)
+    profile = user_public_profile(user, viewer)
+    if not profile:
+        return flask.jsonify({"found": False}), 404
+```
+
+### User Testing Notes
+- Users attempted protected actions while logged out and confirmed the system rejected requests without crashing.
+- Users tested empty inputs in profile lookup and confirmed controlled error responses.
+
+
+
+XI. User Testing Summary
+See: docs/User_Testing_Summary.md:
+
+# CSSE375 User Testing Report
+
+## Instructions Given to Testers
+- Create an account.
+- Look up and add 2 movies to your watchlist.
+- Look up and rate and review 2 movies.
+- Look up and follow the user "Peterfrach".
+- Change your privacy settings.
+- Log out and log back in.
+- Remove a movie from your watchlist.
+
+## Test 1
+- User: Keeley Wilhelm
+- Notes:
+    - People might search for users in the movie search prompt.
+    - Saving reviews requires text input and a button click, which could be improved.
+    - Clicking on the star rating auto-saves the rating, which is not made clear to the user.
+- Feedback:
+    - Instead of a toggle watchlist button, use explicit Add to Watchlist / Remove from Watchlist buttons.
+
+## Test 2
+- User: Jasmeen Kaur
+- Notes:
+    - Hide password.
+- Feedback:
+    - Add a Friends tab on the nav bar.
+
+## Test 3
+- User: Basil Grimes
+- Notes:
+    - Hide password.
+- Feedback:
+    - Move Sign Out button to the right side of the nav bar.
+    - Add sign-out confirmation.
+
+
+XII. Demo and Delivery Checklist
+See: docs/Demo_and_Delivery_Checklist.md:
+
+# Demo and Delivery Checklist
+
+## 1. System Demonstration Plan
+- Demo login/signup and session behavior.
+- Demo movie search and suggestions.
+- Demo watchlist and watched rating/review updates.
+- Demo user discovery, follow/unfollow, and activity feed.
+- Demo privacy settings effect on profile visibility.
+- Demo CI workflow presence and test automation setup.
+
+## 2. Delivery Package Contents
+- Source code repository with backend/frontend code.
+- `docs/` with Milestone 4 and Objective 1 deliverables.
+- CI workflow in `.github/workflows/ci.yml`.
+- Test suite in `tests/`.
+- Setup instructions in README and installation guide.
+
+## 3. Final Delivery Validation
+- Confirm backend tests pass.
+- Confirm frontend tests execute in CI environment.
+- Confirm all required Objective 1 documents are present in `docs/`.
+
+
+
+Objective 1 Completion Checklist
+1) SRS and SADS finalized and updated for delivered scope.
+2) Final customer-facing functionality delivered and integrated with CI.
+3) Milestone 2/3/4 code refactored and protected by characterization/integration tests.
+4) Source and configuration materials organized for delivery.
+5) Integration/system/acceptance testing finalized and automated in CI.
+6) Ethics review completed (IEEE standards + AI use concern).
+7) Error handling scope and snippet documented.
+8) User, installation, maintenance, and administration guides prepared.
+9) All Objective 1 development/test/user/admin docs assembled through this report and linked docs.
+
+
+2. Objective 2
+
+3. Objective 3
+Used CoPilot’s Claude Haiku 4.5
+2/13/2026 - Peter: Asked LLM to create some JUnit Tests for the server.py file to ensure proper functionality. It provided well documented and comprehensive tests.
+3/19/2026 - Peter: Asked LLM to identify Bad Code Smells for M1 Objective 3. It properly found plenty of code smells for us to document and look into.
+3/26/2026 - Peter: In order to help identify bad code smells, I asked the AI the following prompt: Identify some bad code smells within this project from the following list of smells and give me a documented list of the most important refactoring that need to happen from it
+3/27/2026 - Peter: After getting the list of bad code smells from the AI, I asked it to begin refactoring and I verified that the proper changes were made and the app continued to work properly.
+3/30/2026 - Peter: Had Copilot implement the written reviews for movies and save them for individual users on a pickle database. It implemented it cleanly and well and after debugging some of its code a few times, it worked perfectly.
+4/1/2026 - Veer: In order to show available options, I asked CoPilot how to search for multiple films using the API.
+4/2/2026 - Veer: I asked CoPilot to write some tests for the new feature.
+4/2/2026 - Peter: I had Copilot reformat my Milestone 2 Report/Summary to make it more readable.
+4/9/2026 - Peter: Had copilot help write me characterization tests and mock GUI/script tests to simulate user interaction and verify proper functionality
+4/10/2026 - Peter: Asked copilot for help with extending the mock and DOM to prepare for the next 2 features we will be adding to be able to properly test them
+4/23/2026 - Peter: Asked copilot for help adding new features. It successfully added the ability to view movie recommendations, the ability to lookup a users info based on their username, and added some sample data for new users. It properly tested all of the changes.
+4/23/2026 - Peter: Had AI reformat draft Milestone 3 report to make it more readable and more of a summary
+
+4. Objective 4
+

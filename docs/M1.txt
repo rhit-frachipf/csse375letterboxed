@@ -1,0 +1,93 @@
+Milestone 1
+Objective 1:
+Our main communication with our project advisor will be questions asked in class. If we are out of class, we will email or message them on teams. We will also be using our project reporting system to keep our instructor up to date with our progress on the project.
+The starting candidate list of features that will be added to the system (along with general refactoring and UI changes):
+When searching, display first available options for what has already been typed in the search bar, and allow those options to be selected
+When viewing a movie, you can see other users ratings of the movie
+View other users watchlists and rated movies
+Allow for written reviews along with the star reviews
+More will be added in the future
+The instructor has access to our GitHub.
+For our project reporting system we are using the GitLab feature of a Wiki page. It is just a simple page for adding text for updates and features. The advisor has permission to view and edit:
+https://github.com/rhit-frachipf/csse375letterboxed/wiki/Project-Reports-and-Features
+Meeting with the advisor was done Friday of week 1.
+Objective 2:
+So far we have implemented just a few comprehensive JUnit tests for our httpserver.py and our javascript methods as well as came up with ideas for possible manual system tests. For the JUnit tests, we looked for key functions of our system to test and areas we would expect changes. For the system tests, we have just been running the app, and running through the app to ensure the different features work as intended. We estimate that about 40% of the systems current functionality is covered by the JUnit tests
+Objective 3:
+LLM found the following bad code smells for our proposed new features list:
+Backend:
+Data Class
+Location: Lines 13-18 (app.username, app.password, app.watched, app.watchlist, app.loggedin)
+Issue: Flask app object is being used as a global data container instead of a proper user object.
+Impact on new features: Cannot handle multiple concurrent users or viewing other users' data.
+
+Temporary Field
+Location: Lines 13-18 (app.username, app.password)
+Issue: Fields are only populated during login and are not always valid.
+Impact on new features: Viewing other users' content will require holding multiple user contexts at once.
+
+Inappropriate Intimacy
+Location: Lines 122-148 (route handlers)
+Issue: Routes directly manipulate app state and call business logic functions.
+Impact on new features: Adding reviews/ratings will scatter logic across more routes and handlers.
+
+Feature Envy
+Location: Lines 38-65 (addToWatchList), Lines 68-90 (addToWatched)
+Issue: Functions access and modify nested user dictionaries directly.
+Impact on new features: Review system will require even deeper data structure manipulation.
+
+Primitive Obsession
+Location: Line 34 (user entry dict)
+Issue: User data is stored as a plain dictionary instead of a User class.
+Impact on new features: Hard to add validation/behavior; reviews and ratings require new fields.
+
+Long Method
+Location: Lines 75-95 (login())
+Issue: Complex nested loops with mixed concerns.
+Impact on new features: Harder to extract reusable user lookup for search/review features.
+
+Large Class
+Location: Lines 25-148 (entire file behavior)
+Issue: One file handles routing, authentication, watchlist, and ratings.
+Impact on new features: Adding search, reviews, and multi-user viewing will make growth hard to manage.
+
+Front End:
+Duplicated Code
+Location: Lines 172-190 (addToWatchList()) and 193-209 (addToWatched())
+Issue: Identical fetch patterns with different endpoints.
+Impact on new features: Ratings, reviews, and search selections will require more duplicate fetch handlers.
+
+Data Clumps
+Location: Lines 4-8 (movietitle, moviegenre, movieyear, movieplot, movieposter)
+Issue: Movie properties are scattered as separate variables.
+Impact on new features: New fields like reviews and otherUsersRatings will add more scattered variables.
+
+Primitive Obsession
+Location: Lines 4-8
+Issue: Movie data is represented as scattered primitives instead of a movie object.
+Impact on new features: Hard to pass movie data around or attach reviews/ratings cleanly.
+
+Long Method
+Location: Lines 38-88 and 89-140
+Issue: openmymovies/openwatchlist include nested async logic plus DOM updates.
+Impact on new features: Search suggestions and review rendering will become difficult to maintain.
+
+Feature Envy
+Location: Lines 322-335 (savevars/loadvars)
+Issue: Direct global access to localStorage instead of a dedicated manager.
+Impact on new features: Multiple data types (user, movie, reviews, ratings) will become messy.
+
+Message Chains
+Location: Lines 42-50, 99-107
+Issue: Nested async fetch/data chains.
+Impact on new features: Multi-user ratings and review fetches will create deeper chains.
+
+Switch Statements (implicit smell)
+Location: Architectural level
+Issue: No central switch/enum/component strategy; page behavior is spread by separate HTML/JS paths.
+Impact on new features: Search dropdown component integration will be harder.
+
+Objective 4:
+For this objective, we created a Wiki page on our GitHub Repository to document our usage of AI and how well it worked to complete its tasks. So far we only have a few use cases documented in the Journal:
+https://github.com/rhit-frachipf/csse375letterboxed/wiki/AI-Usage-Journal
+
