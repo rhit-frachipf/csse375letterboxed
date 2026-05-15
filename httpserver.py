@@ -299,10 +299,9 @@ def get_movie_ratings():
     if not movie_title:
         return flask.jsonify([]), 400
     
-    all_users = user_repository._load_users()
     ratings = []
     
-    for user in all_users:
+    for user in user_repository._load_users():
         if user.username == viewer.username:
             continue
         
@@ -310,7 +309,7 @@ def get_movie_ratings():
         if not watched_value:
             continue
         
-        privacy = user_repository.get_privacy_settings(user.username)
+        privacy = user.privacy if hasattr(user, 'privacy') else {}
         show_ratings = privacy.get("showRatings", True)
         show_reviews = privacy.get("showReviews", True)
 

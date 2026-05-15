@@ -94,10 +94,17 @@ describe("app — taste-profile scoring performance", () => {
       );
     });
 
+    document.body.innerHTML = `
+      <a class="signout" href="#">Sign Out</a>
+      <input id="searchbox" value="" />
+      <p id="searchStatus"></p>
+      <div id="searchMenu"></div>
+      <button id="search">Search</button>
+    `;
     const fakeDocument = {
       location: { href: "search.html" },
-      querySelector: () => null,
-      querySelectorAll: () => [],
+      querySelector: document.querySelector.bind(document),
+      querySelectorAll: document.querySelectorAll.bind(document),
       createElement: document.createElement.bind(document),
       createTextNode: document.createTextNode.bind(document),
     };
@@ -117,24 +124,22 @@ describe("app — taste-profile scoring performance", () => {
       return movies.find((m) => m.title === title) || null;
     });
 
-    document.body.innerHTML = `
-      <a class="signout" href="#">Sign Out</a>
-      <input id="searchbox" value="" />
-      <p id="searchStatus"></p>
-      <div id="searchMenu"></div>
-      <button id="search">Search</button>
-    `;
-
-    const fakeDocument = {
-      location: { href: "search.html" },
-      querySelector: document.querySelector.bind(document),
-      querySelectorAll: document.querySelectorAll.bind(document),
-      createElement: document.createElement.bind(document),
-      createTextNode: document.createTextNode.bind(document),
-    };
-
     const times = [];
     for (let i = 0; i < 5; i++) {
+      document.body.innerHTML = `
+        <a class="signout" href="#">Sign Out</a>
+        <input id="searchbox" value="" />
+        <p id="searchStatus"></p>
+        <div id="searchMenu"></div>
+        <button id="search">Search</button>
+      `;
+      const fakeDocument = {
+        location: { href: "search.html" },
+        querySelector: document.querySelector.bind(document),
+        querySelectorAll: document.querySelectorAll.bind(document),
+        createElement: document.createElement.bind(document),
+        createTextNode: document.createTextNode.bind(document),
+      };
       times.push(await measureAsync(() => app.openSearch(fakeDocument)));
     }
 
@@ -392,10 +397,17 @@ describe("app — taste-profile memory footprint", () => {
       }
     );
 
+    document.body.innerHTML = `
+      <a class="signout" href="#">Sign Out</a>
+      <input id="searchbox" value="" />
+      <p id="searchStatus"></p>
+      <div id="searchMenu"></div>
+      <button id="search">Search</button>
+    `;
     const fakeDocument = {
       location: { href: "search.html" },
-      querySelector: () => null,
-      querySelectorAll: () => [],
+      querySelector: document.querySelector.bind(document),
+      querySelectorAll: document.querySelectorAll.bind(document),
       createElement: document.createElement.bind(document),
       createTextNode: document.createTextNode.bind(document),
     };

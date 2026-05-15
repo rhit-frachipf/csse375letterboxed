@@ -201,7 +201,9 @@ describe("app module", () => {
     return {
       location: { href: "signin.html" },
       querySelector: document.querySelector.bind(document),
-      querySelectorAll: document.querySelectorAll.bind(document)
+      querySelectorAll: document.querySelectorAll.bind(document),
+      createElement: document.createElement.bind(document),
+      createTextNode: document.createTextNode.bind(document)
     };
   }
 
@@ -1043,6 +1045,9 @@ describe("search feature", () => {
       createTextNode: document.createTextNode.bind(document)
     };
 
+    jest.spyOn(api, "fetchWatchlist").mockResolvedValue([]);
+    jest.spyOn(api, "fetchWatched").mockResolvedValue({});
+
     const searchMoviesSpy = jest.spyOn(api, "searchMovies").mockResolvedValue([
       { title: "Test Movie", year: "2020", plot: "Test", genre: "Drama", poster: "http://example.com/test.jpg" }
     ]);
@@ -1077,9 +1082,11 @@ describe("search feature", () => {
       createTextNode: document.createTextNode.bind(document)
     };
 
+    jest.spyOn(api, "fetchWatchlist").mockResolvedValue([]);
+    jest.spyOn(api, "fetchWatched").mockResolvedValue({});
     jest.spyOn(api, "searchMovies").mockResolvedValue([]);
 
-    app.openSearch(fakeDocument);
+    await app.openSearch(fakeDocument);
 
     const searchbox = document.querySelector("#searchbox");
     searchbox.value = "";
@@ -1114,10 +1121,18 @@ describe("search feature", () => {
       genre: "Drama",
       poster: "http://example.com/test.jpg"
     };
+    jest.spyOn(api, "fetchWatchlist").mockResolvedValue([]);
+    jest.spyOn(api, "fetchWatched").mockResolvedValue({});
     jest.spyOn(api, "searchMovies").mockResolvedValue([suggestionMovie]);
-    jest.spyOn(api, "fetchMovieByTitle").mockResolvedValue(fullMovie);
+    jest.spyOn(api, "fetchMovieByTitle").mockImplementation(async (title) => {
+      if (title === "Test Movie") {
+        return fullMovie;
+      }
+      // Return a minimal object for popular movies fetched during recommendation load
+      return { title, year: "2000", plot: "", genre: "Drama", poster: "" };
+    });
 
-    app.openSearch(fakeDocument);
+    await app.openSearch(fakeDocument);
 
     const searchbox = document.querySelector("#searchbox");
     searchbox.value = "test";
@@ -1127,6 +1142,9 @@ describe("search feature", () => {
     await Promise.resolve();
 
     document.querySelector("#searchMenu .search-result-card").click();
+
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(storage.loadAppState().selectedMovie).toEqual(fullMovie);
     expect(fakeDocument.location.href).toBe("movie.html");
